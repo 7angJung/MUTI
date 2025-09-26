@@ -3,6 +3,7 @@ package com.muti.muti.survey;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muti.muti.auth.dto.AuthRequest;
 import com.muti.muti.auth.dto.AuthResponse;
+import com.muti.muti.survey.domain.Question;
 import com.muti.muti.survey.dto.SurveySubmissionDto;
 import com.muti.muti.survey.repository.QuestionRepository;
 import com.muti.muti.user.domain.User;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,11 +54,12 @@ public class SurveyIntegrationTest {
     private ObjectMapper objectMapper;
 
     private String jwt;
+    private User testUser;
 
     @BeforeEach
     void setUp() throws Exception {
         userRepository.deleteAll();
-        User testUser = new User("surveyid", passwordEncoder.encode("password123"), "survey@example.com");
+        testUser = new User("surveyid", passwordEncoder.encode("password123"), "survey@example.com");
         userRepository.save(testUser);
 
         // Authenticate and get JWT
@@ -130,8 +133,8 @@ public class SurveyIntegrationTest {
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isNotEmpty())
-                // Check that genres are from the expected set {Rock, Jazz, Hip-Hop, Pop}
-                .andExpect(jsonPath("$[0].genre").value(org.hamcrest.Matchers.oneOf("Rock", "Jazz", "Hip-Hop", "Pop")));
+                // Check that genres are from the expected set
+                .andExpect(jsonPath("$[0].genre").value(org.hamcrest.Matchers.oneOf("록", "재즈", "팝", "발라드", "댄스", "클래식", "인디")));
 
     }
 }

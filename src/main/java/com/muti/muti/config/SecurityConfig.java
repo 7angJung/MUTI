@@ -39,12 +39,11 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/login", "/api/users/register", "/", "/index.html", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/login/oauth2/**")
+                        .requestMatchers("/api/auth/login", "/api/users/register", "/", "/index.html", "/survey.html", "/result.html", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/login/oauth2/**", "/oauth2/**")
                         .permitAll()
-                        .requestMatchers("/api/music/**", "/api/survey/**").authenticated()
+                        .requestMatchers("/api/survey/**", "/api/music/**", "/api/users/me").authenticated()
                         .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
+                )                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .exceptionHandling(exceptions -> exceptions

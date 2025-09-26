@@ -1,11 +1,9 @@
 package com.muti.muti.auth.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-@Data
-@NoArgsConstructor
+@Getter
 @AllArgsConstructor
 public class AuthRequest {
     private String userId;

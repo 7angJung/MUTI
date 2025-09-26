@@ -24,9 +24,12 @@ public class Music {
 
     private String genre;
 
-    public Music(String title, String artist, String genre) {
+    private String mutiType;
+
+    public Music(String title, String artist, String genre, String mutiType) {
         this.title = title;
         this.artist = artist;
         this.genre = genre;
+        this.mutiType = mutiType;
     }
 }

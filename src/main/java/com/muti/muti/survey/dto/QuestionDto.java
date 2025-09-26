@@ -15,6 +15,8 @@ public class QuestionDto {
     public QuestionDto(Question question) {
         this.id = question.getId();
         this.text = question.getText();
-        this.choices = question.getChoices().stream().map(ChoiceDto::new).collect(Collectors.toList());
+        this.choices = question.getChoices().stream()
+                .map(ChoiceDto::new)
+                .collect(Collectors.toList());
     }
 }

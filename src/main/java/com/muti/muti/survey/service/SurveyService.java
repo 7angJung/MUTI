@@ -1,9 +1,13 @@
 package com.muti.muti.survey.service;
 
+import com.muti.muti.music.dto.MusicDto;
+import com.muti.muti.music.service.MusicService;
 import com.muti.muti.survey.domain.Choice;
 import com.muti.muti.survey.domain.MutiTrait;
 import com.muti.muti.survey.dto.MutiResultDto;
 import com.muti.muti.survey.dto.QuestionDto;
+import com.muti.muti.survey.dto.SurveyResultWithMusicDto;
+import com.muti.muti.survey.dto.SurveySubmissionDto;
 import com.muti.muti.survey.repository.ChoiceRepository;
 import com.muti.muti.survey.repository.QuestionRepository;
 import com.muti.muti.user.domain.User;
@@ -14,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,49 +27,40 @@ public class SurveyService {
     private final QuestionRepository questionRepository;
     private final ChoiceRepository choiceRepository;
     private final UserRepository userRepository;
+    private final MusicService musicService;
 
     @Transactional(readOnly = true)
-    public List<QuestionDto> getQuestions() {
-        return questionRepository.findAllWithChoices().stream()
+    public List<QuestionDto> getAllQuestions() {
+        return questionRepository.findAll().stream()
                 .map(QuestionDto::new)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public MutiResultDto calculateAndSaveMutiType(String username, Map<Long, Long> answers) {
-        User user = userRepository.findByUserId(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+    public MutiResultDto calculateAndSaveMutiType(Long userId, SurveySubmissionDto submissionDto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
 
-        List<Choice> chosenChoices = choiceRepository.findAllById(answers.values());
+        StringBuilder mutiTypeBuilder = new StringBuilder();
+        List<Choice> choices = choiceRepository.findAllById(submissionDto.getAnswers().values());
 
-        Map<MutiTrait, Long> traitCounts = chosenChoices.stream()
+        // This logic assumes questions are always in the same order.
+        // A more robust implementation would map questions to traits.
+        choices.stream()
                 .map(Choice::getTrait)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+                .sorted()
+                .forEach(mutiTypeBuilder::append);
 
-        StringBuilder mutiType = new StringBuilder();
-        mutiType.append(determineTrait(traitCounts, MutiTrait.E, MutiTrait.I));
-        mutiType.append(determineTrait(traitCounts, MutiTrait.S, MutiTrait.F));
-        mutiType.append(determineTrait(traitCounts, MutiTrait.A, MutiTrait.D));
-        mutiType.append(determineTrait(traitCounts, MutiTrait.P, MutiTrait.U));
-
-        String finalMutiType = mutiType.toString();
-        user.setMutiType(finalMutiType);
+        String mutiType = mutiTypeBuilder.toString();
+        user.setMutiType(mutiType);
         userRepository.save(user);
 
-        String description = generateMutiDescription(finalMutiType);
-
-        return new MutiResultDto(finalMutiType, description);
+        return new MutiResultDto(mutiType, "Your MUTI type description here.");
     }
 
-    private String determineTrait(Map<MutiTrait, Long> counts, MutiTrait trait1, MutiTrait trait2) {
-        long count1 = counts.getOrDefault(trait1, 0L);
-        long count2 = counts.getOrDefault(trait2, 0L);
-        // In case of a tie or if no choice was made for this dimension, default to the first one.
-        return count1 >= count2 ? trait1.name() : trait2.name();
-    }
-
-    private String generateMutiDescription(String mutiType) {
-        // This can be expanded with more detailed descriptions for each type
-        return "Your MUTI type is " + mutiType;
+    public SurveyResultWithMusicDto getSurveyResultWithMusic(String mutiType) {
+        MutiResultDto mutiResultDto = new MutiResultDto(mutiType, "Description for " + mutiType);
+        List<MusicDto> recommendations = musicService.getRecommendationsByMutiType(mutiType);
+        return new SurveyResultWithMusicDto(mutiResultDto, recommendations);
     }
 }

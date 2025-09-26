@@ -10,6 +10,6 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 public class SurveySubmissionDto {
-    // Key: Question ID, Value: Chosen Choice ID
+    // Key: questionId, Value: choiceId
     private Map<Long, Long> answers;
 }

@@ -3,193 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MUTI - Music User Type Indicator</title>
+    <title>MUTI - 로그인</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .full-width-container { grid-column: 1 / -1; margin-top: 20px; }
-        h1, h2 { color: #4CAF50; }
-        h2 { border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
-        h3 { color: #333; }
-        form div { margin-bottom: 10px; }
-        label { display: inline-block; width: 100px; }
-        input[type="text"], input[type="email"], input[type="password"] { width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 18px; background-color: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; margin-right: 5px; font-size: 14px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
+        .login-container { background: #fff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center; width: 320px; }
+        h1 { color: #4CAF50; margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 16px; margin-top: 10px; }
         button:hover { background-color: #45a049; }
-        .response-div { margin-top: 15px; padding: 12px; border: 1px solid #ccc; background-color: #f9f9f9; white-space: pre-wrap; min-height: 40px; border-radius: 4px; }
-        ul { list-style-type: none; padding: 0; }
-        li { background: #f0f0f0; margin: 5px 0; padding: 10px; border-radius: 4px; }
-        #surveyFormContainer .question { margin-bottom: 15px; }
-        #surveyFormContainer label { margin-left: 5px; }
+        .link-button { background: none; border: none; color: #4CAF50; cursor: pointer; text-decoration: underline; padding: 0; font-size: 14px; margin-top: 15px; }
+        
+        .kakao-login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background-color: #FEE500;
+            color: #000000;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .kakao-login-btn:hover { background-color: #f2d900; }
+        .kakao-symbol { margin-right: 8px; width: 24px; height: 22px; }
+
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: #fefefe; margin: 15% auto; padding: 30px; border: 1px solid #888; width: 80%; max-width: 400px; border-radius: 8px; text-align: left; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        .close-button:hover, .close-button:focus { color: black; text-decoration: none; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <h1>MUTI - 당신의 음악 성향을 알아보세요!</h1>
-
-    <div class="grid-container">
-        <div class="container">
-            <h2>1. 회원가입</h2>
-            <form id="registrationForm">
-                <div><label for="reg_userId">ID:</label><input type="text" id="reg_userId" required pattern="[a-zA-Z0-9]{3,20}" title="ID는 3-20자의 영문 또는 숫자만 가능합니다."></div>
-                <div><label for="reg_email">Email:</label><input type="email" id="reg_email" required></div>
-                <div><label for="reg_password">Password:</label><input type="password" id="reg_password" required></div>
-                <button type="submit">Register</button>
-            </form>
-            <div id="response" class="response-div">Server Response:</div>
-        </div>
-
-        <div class="container">
-            <h2>2. 로그인</h2>
-            <form id="loginForm">
-                <div><label for="login_userId">ID:</label><input type="text" id="login_userId" required></div>
-                <div><label for="login_password">Password:</label><input type="password" id="login_password" required></div>
-                <button type="submit">Login</button>
-                <a href="/oauth2/authorization/kakao" class="kakao-login-btn">카카오 로그인</a>
-            </form>
-            <div id="loginResponse" class="response-div">Login Response:</div>
-        </div>
-
-        <div class="container full-width-container">
-            <h2>3. MUTI 검사 및 음악 추천</h2>
-            <button id="startSurveyButton">성향 검사 시작하기</button>
-            <div id="surveyFormContainer"></div>
-            <div id="surveyResult" class="response-div" style="display:none;"></div>
-            <div id="recommendationContainer" class="full-width-container" style="display:none; margin-top: 20px;">
-                <h3>당신을 위한 추천 음악</h3>
-                <ul id="recommendationsList"></ul>
+    <div class="login-container">
+        <h1>MUTI</h1>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="login_userId">ID</label>
+                <input type="text" id="login_userId" required>
             </div>
+            <div class="form-group">
+                <label for="login_password">Password</label>
+                <input type="password" id="login_password" required>
+            </div>
+            <button type="submit">로그인</button>
+        </form>
+        <a href="/oauth2/authorization/kakao" class="kakao-login-btn">
+            <svg class="kakao-symbol" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 4.64c-6.96 0-12.64 4.48-12.64 10.08 0 3.52 2.32 6.64 5.76 8.48l-1.68 6.24 6.48-4.56c.64.08 1.28.16 2.08.16 6.96 0 12.64-4.48 12.64-10.08s-5.68-10.16-12.64-10.16z"/></svg>
+            <span>카카오 로그인</span>
+        </a>
+        <button id="registerBtn" class="link-button">계정이 없으신가요? 회원가입</button>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>회원가입</h2>
+            <form id="registrationForm">
+                <div class="form-group">
+                    <label for="reg_userId">ID</label>
+                    <input type="text" id="reg_userId" required pattern="[a-zA-Z0-9]{3,20}" title="ID는 3-20자의 영문 또는 숫자만 가능합니다.">
+                </div>
+                <div class="form-group">
+                    <label for="reg_email">Email</label>
+                    <input type="email" id="reg_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg_password">Password</label>
+                    <input type="password" id="reg_password" required>
+                </div>
+                <button type="submit">가입하기</button>
+            </form>
         </div>
     </div>
 
     <script>
-        let jwtToken = null;
-
-        // --- Page Load ---
-        window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            if (token) {
-                jwtToken = token;
-                const responseDiv = document.getElementById('loginResponse');
-                responseDiv.textContent = `카카오 로그인 성공! 성향 검사를 진행해주세요.`;
-                // URL에서 토큰 파라미터 정리
-                window.history.replaceState({}, document.title, "/index.html");
+        // --- Modal Logic ---
+        const modal = document.getElementById('registerModal');
+        const registerBtn = document.getElementById('registerBtn');
+        const closeBtn = document.querySelector('.close-button');
+        registerBtn.onclick = () => modal.style.display = 'block';
+        closeBtn.onclick = () => modal.style.display = 'none';
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
             }
-        });
+        };
 
         // --- API Helper ---
         async function apiFetch(url, options = {}) {
-            const isPublic = options.isPublic || false;
-            if (!jwtToken && !isPublic) {
-                alert('Please log in first.');
-                return { error: true, message: 'Not logged in' };
-            }
-            const defaultHeaders = { 'Content-Type': 'application/json' };
-            if (jwtToken && !isPublic) { defaultHeaders['Authorization'] = 'Bearer ' + jwtToken; }
             try {
-                return await fetch(url, { ...options, headers: { ...defaultHeaders, ...options.headers } });
+                return await fetch(url, {
+                    ...options,
+                    headers: { 'Content-Type': 'application/json', ...options.headers }
+                });
             } catch (error) {
                 return { error: true, message: `Network Error: ${error.message}` };
             }
         }
 
-        // --- 1. Registration ---
+        // --- Registration ---
         document.getElementById('registrationForm').addEventListener('submit', async function(event) {
             event.preventDefault();
-            const responseDiv = document.getElementById('response');
             const response = await apiFetch('/api/users/register', {
                 method: 'POST',
                 body: JSON.stringify({
-                    userId: document.getElementById('reg_userId').value, 
-                    email: document.getElementById('reg_email').value, 
-                    password: document.getElementById('reg_password').value 
-                }),
-                isPublic: true
+                    userId: document.getElementById('reg_userId').value,
+                    email: document.getElementById('reg_email').value,
+                    password: document.getElementById('reg_password').value
+                })
             });
-            responseDiv.textContent = response.error ? response.message : `Status: ${response.status}\n${await response.text()}`;
-        });
 
-        // --- 2. Login ---
-        document.getElementById('loginForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const responseDiv = document.getElementById('loginResponse');
-            const response = await apiFetch('/api/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({
-                    userId: document.getElementById('login_userId').value, 
-                    password: document.getElementById('login_password').value 
-                }),
-                isPublic: true
-            });
             if (response && response.ok) {
-                jwtToken = (await response.json()).jwt;
-                responseDiv.textContent = `로그인 성공! 성향 검사를 진행해주세요.`;
-            } else if(response) {
-                responseDiv.textContent = response.error ? response.message : `Status: ${response.status}\n${await response.text()}`;
+                alert('회원가입이 완료되었습니다. 로그인해주세요.');
+                modal.style.display = 'none';
+                document.getElementById('registrationForm').reset();
+            } else {
+                const errorText = response ? await response.text() : '알 수 없는 오류';
+                alert(`회원가입 실패: ${errorText}`);
             }
         });
 
-        // --- 3. MUTI Survey ---
-        document.getElementById('startSurveyButton').addEventListener('click', async function() {
-            const surveyContainer = document.getElementById('surveyFormContainer');
-            surveyContainer.innerHTML = '질문을 불러오는 중...';
-            const response = await apiFetch('/api/survey/questions');
+        // --- Login ---
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const response = await apiFetch('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId: document.getElementById('login_userId').value,
+                    password: document.getElementById('login_password').value
+                })
+            });
+
             if (response && response.ok) {
-                const questions = await response.json();
-                let formHtml = '<form id="surveyForm">';
-                questions.forEach(q => {
-                    formHtml += `<div class="question"><h3>${q.text}</h3>`;
-                    q.choices.forEach(c => { formHtml += `<div><input type="radio" name="question_${q.id}" value="${c.id}" required><label>${c.text}</label></div>`; });
-                    formHtml += '</div>';
-                });
-                formHtml += '<button type="submit">결과 확인하기</button></form>';
-                surveyContainer.innerHTML = formHtml;
-                document.getElementById('surveyForm').addEventListener('submit', submitSurvey);
-            } else { surveyContainer.innerHTML = '질문을 불러오는데 실패했습니다. 로그인했는지 확인해주세요.'; }
+                const data = await response.json();
+                sessionStorage.setItem('jwt', data.jwt);
+                window.location.href = '/survey.html';
+            } else {
+                alert('로그인 실패: 아이디 또는 비밀번호를 확인해주세요.');
+            }
         });
 
-        async function submitSurvey(event) {
-            event.preventDefault();
-            const answers = {};
-            const formData = new FormData(event.target);
-            for (let [key, value] of formData.entries()) { answers[key.split('_')[1]] = Number(value); }
-
-            const response = await apiFetch('/api/survey/submit', { method: 'POST', body: JSON.stringify({ answers }) });
-            const resultDiv = document.getElementById('surveyResult');
-
-            if (response && response.ok) {
-                const result = await response.json();
-                resultDiv.innerHTML = `<h3>당신의 MUTI 타입: ${result.mutiType}</h3><p>${result.description}</p><button id="getRecommendationsButton">내 타입의 음악 추천받기</button>`;
-                resultDiv.style.display = 'block';
-                document.getElementById('getRecommendationsButton').addEventListener('click', getRecommendations);
-            } else { resultDiv.textContent = '결과를 제출하는데 실패했습니다.'; resultDiv.style.display = 'block'; }
-        }
-
-        // --- 4. Get Recommendations ---
-        async function getRecommendations() {
-            const recommendationContainer = document.getElementById('recommendationContainer');
-            const recommendationsListUl = document.getElementById('recommendationsList');
-            recommendationContainer.style.display = 'block';
-            recommendationsListUl.innerHTML = '<li>추천 음악을 불러오는 중...</li>';
-
-            const response = await apiFetch('/api/music/recommendations');
-            if (response && response.ok) {
-                const recommendations = await response.json();
-                recommendationsListUl.innerHTML = '';
-                if (recommendations.length === 0) {
-                    recommendationsListUl.innerHTML = '<li>추천 음악이 없습니다.</li>';
-                } else {
-                    recommendations.forEach(song => {
-                        const li = document.createElement('li');
-                        li.textContent = `${song.title} - ${song.artist} (${song.genre})`;
-                        recommendationsListUl.appendChild(li);
-                    });
-                }
-            } else { recommendationsListUl.innerHTML = '<li>추천을 받아오는데 실패했습니다.</li>'; }
-        }
-
+        // --- Kakao Login Token Handling ---
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                sessionStorage.setItem('jwt', token);
+                // URL에서 토큰 파라미터 정리하고 설문 페이지로 이동
+                window.history.replaceState({}, document.title, "/");
+                window.location.href = '/survey.html';
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUTI - 분석 결과</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #4CAF50; text-align: center; }
+        h3 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px; }
+        #result-display { text-align: center; font-size: 1.2em; margin: 20px 0; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #f0f0f0; margin: 5px 0; padding: 10px; border-radius: 4px; }
+        button { padding: 10px 18px; background-color: #4CAF50; color: white; border: none; cursor: pointer; border-radius: 4px; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <div class="container" id="printableResultArea">
+        <h1>MUTI 분석 결과</h1>
+        
+        <div id="result-display">
+            <h2>당신의 MUTI 타입은 <span id="muti-type"></span> 입니다.</h2>
+            <p id="muti-description"></p>
+        </div>
+
+        <div id="recommendationContainer">
+            <h3>당신을 위한 추천 음악</h3>
+            <ul id="recommendationsList"></ul>
+        </div>
+    </div>
+
+    <button id="pdf-download-btn">결과 PDF로 저장</button>
+
+    <script>
+        window.addEventListener('load', () => {
+            const resultData = JSON.parse(sessionStorage.getItem('mutiResult'));
+
+            if (resultData) {
+                document.getElementById('muti-type').textContent = resultData.mutiType;
+                document.getElementById('muti-description').textContent = resultData.description;
+                renderRecommendations(resultData.recommendations);
+                sessionStorage.removeItem('mutiResult'); // Clean up
+            } else {
+                document.querySelector(".container").innerHTML = "<h1>결과를 불러올 수 없습니다.</h1><p style='text-align:center;'><a href='/survey.html'>다시 시도하기</a></p>";
+            }
+        });
+
+        function renderRecommendations(recommendations) {
+            const recommendationsListUl = document.getElementById('recommendationsList');
+            recommendationsListUl.innerHTML = '';
+            if (!recommendations || recommendations.length === 0) {
+                recommendationsListUl.innerHTML = '<li>추천 음악이 없습니다.</li>';
+            } else {
+                recommendations.forEach(song => {
+                    const li = document.createElement('li');
+                    li.textContent = `${song.title} - ${song.artist} (${song.genre})`;
+                    recommendationsListUl.appendChild(li);
+                });
+            }
+        }
+
+        document.getElementById('pdf-download-btn').addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const element = document.getElementById('printableResultArea');
+            const canvas = await html2canvas(element);
+            const imgData = canvas.toDataURL('image/png');
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            let heightLeft = pdfHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pdf.internal.pageSize.getHeight();
+
+            while (heightLeft > 0) {
+                position = heightLeft - pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pdf.internal.pageSize.getHeight();
+            }
+            pdf.save('muti-result.pdf');
+        });
+    </script>
+</body>
+</html>

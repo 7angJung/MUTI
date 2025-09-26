@@ -12,20 +12,17 @@ import lombok.Setter;                            // Lombok: 모든 필드에 대
 @Setter
 public class UserRegisterRequest {
 
-    // username: 공백 불가, 최소 3자 ~ 최대 20자
-    @NotBlank(message = "사용자 ID는 필수입니다.")
-    @Size(min = 3, max = 20, message = "사용자 ID는 3자 이상 20자 이하이어야 합니다.")
-    @Pattern(regexp = "^[a-zA-Z0-9]+$", message = "사용자 ID는 영어와 숫자로만 구성되어야 합니다.")
+    @NotBlank(message = "ID는 필수 입력 항목입니다.")
+    @Size(min = 3, max = 20, message = "ID는 3자 이상 20자 이하로 입력해주세요.")
+    @Pattern(regexp = "^[a-zA-Z0-9]*$", message = "ID는 영문 또는 숫자만 가능합니다.")
     private String userId;
 
-    // email: 공백 불가, 이메일 형식인지 검증
-    @NotBlank(message = "이메일은 비워둘 수 없습니다.")
-    @Email(message = "올바른 이메일 형식을 입력해주세요.")
-    private String email;
-
-    // password: 공백 불가, 최소 8자 이상
-    @NotBlank(message = "비밀번호는 비워둘 수 없습니다.")
-    @Size(min = 8, message = "비밀번호는 최소 8자 이상 입력해야 합니다.")
+    @NotBlank(message = "비밀번호는 필수 입력 항목입니다.")
+    @Size(min = 6, message = "비밀번호는 6자 이상으로 입력해주세요.")
     private String password;
+
+    @NotBlank(message = "이메일은 필수 입력 항목입니다.")
+    @Email(message = "유효한 이메일 형식이 아닙니다.")
+    private String email;
 }
 
