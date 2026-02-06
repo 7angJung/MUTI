@@ -1,4 +1,4 @@
-package jupeter.muti;
+package com.muti;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

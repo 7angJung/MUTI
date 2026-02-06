@@ -1,4 +1,4 @@
-package jupeter.muti;
+package com.muti;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
