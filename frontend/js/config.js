@@ -5,8 +5,8 @@ const API_CONFIG = {
     // 로컬 개발 환경
     development: 'http://localhost:8080/api/v1',
 
-    // 프로덕션 환경 (Railway 배포 후 업데이트 필요)
-    production: 'https://muti-production.up.railway.app/api/v1'
+    // 프로덕션 환경 (Railway)
+    production: 'https://web-production-01b30.up.railway.app/api/v1'
 };
 
 // 현재 환경 감지
