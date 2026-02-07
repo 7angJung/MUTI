@@ -173,12 +173,15 @@ body {
 }
 
 .btn-secondary {
-    background: #f3f4f6;
-    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
 }
 
 .btn-secondary:hover {
-    background: #e5e7eb;
+    background: rgba(29, 185, 84, 0.1);
+    border-color: var(--primary-hover);
+    color: var(--primary-hover);
 }
 
 .btn-outline {
