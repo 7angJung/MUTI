@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 MUTI 타입은?</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">🎵 MUTI</h1>
+        </header>
+
+        <main class="main-content">
+            <!-- Loading State -->
+            <div id="loadingState" class="loading">
+                <div class="spinner"></div>
+                <p>결과를 분석하는 중...</p>
+            </div>
+
+            <!-- Result Container -->
+            <div id="resultContainer" class="result-container" style="display: none;">
+                <!-- MUTI Type Card -->
+                <div class="result-card">
+                    <h2 class="result-label">당신의 MUTI 타입은</h2>
+                    <div class="muti-type-badge" id="mutiTypeBadge">
+                        <span class="muti-type-text" id="mutiTypeText">ESAP</span>
+                    </div>
+                    <h3 class="muti-type-name" id="mutiTypeName">에너지 넘치는 스토리텔러</h3>
+                    <p class="muti-type-description" id="mutiTypeDescription">
+                        당신은 활기차고 감정이 풍부한 음악을 좋아합니다.
+                    </p>
+                </div>
+
+                <!-- Axis Scores -->
+                <div class="axis-scores">
+                    <h3 class="axis-title">세부 점수</h3>
+                    <div class="axis-grid">
+                        <div class="axis-item">
+                            <div class="axis-label">
+                                <span class="axis-left">E</span>
+                                <span class="axis-vs">vs</span>
+                                <span class="axis-right">I</span>
+                            </div>
+                            <div class="axis-bar">
+                                <div class="axis-bar-fill axis-e" id="axisEI"></div>
+                            </div>
+                            <div class="axis-value" id="axisEIValue">+5</div>
+                        </div>
+
+                        <div class="axis-item">
+                            <div class="axis-label">
+                                <span class="axis-left">S</span>
+                                <span class="axis-vs">vs</span>
+                                <span class="axis-right">F</span>
+                            </div>
+                            <div class="axis-bar">
+                                <div class="axis-bar-fill axis-s" id="axisSF"></div>
+                            </div>
+                            <div class="axis-value" id="axisSFValue">+3</div>
+                        </div>
+
+                        <div class="axis-item">
+                            <div class="axis-label">
+                                <span class="axis-left">A</span>
+                                <span class="axis-vs">vs</span>
+                                <span class="axis-right">D</span>
+                            </div>
+                            <div class="axis-bar">
+                                <div class="axis-bar-fill axis-a" id="axisAD"></div>
+                            </div>
+                            <div class="axis-value" id="axisADValue">+2</div>
+                        </div>
+
+                        <div class="axis-item">
+                            <div class="axis-label">
+                                <span class="axis-left">P</span>
+                                <span class="axis-vs">vs</span>
+                                <span class="axis-right">U</span>
+                            </div>
+                            <div class="axis-bar">
+                                <div class="axis-bar-fill axis-p" id="axisPU"></div>
+                            </div>
+                            <div class="axis-value" id="axisPUValue">+4</div>
+                        </div>
+                    </div>
+
+                    <div class="axis-legend">
+                        <p><strong>E:</strong> Energetic (에너제틱) - 빠르고 역동적인 음악 선호</p>
+                        <p><strong>I:</strong> Introspective (성찰적) - 느리고 차분한 음악 선호</p>
+                        <p><strong>S:</strong> Story (스토리텔링) - 가사와 메시지 중시</p>
+                        <p><strong>F:</strong> Feeling (감정적) - 멜로디와 분위기 중시</p>
+                        <p><strong>A:</strong> Active (활동적) - 신나고 경쾌한 음악 선호</p>
+                        <p><strong>D:</strong> Dream (몽환적) - 잔잔하고 감성적인 음악 선호</p>
+                        <p><strong>P:</strong> Popular (대중적) - 유명하고 트렌디한 음악 선호</p>
+                        <p><strong>U:</strong> Unique (독특함) - 새롭고 실험적인 음악 선호</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="location.href='index.html'">
+                        🏠 홈으로
+                    </button>
+                    <button class="btn btn-primary" onclick="location.href='survey.html'">
+                        🔄 다시 테스트
+                    </button>
+                    <button class="btn btn-outline" id="shareBtn">
+                        📤 결과 공유
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="error-state" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <h2>결과를 불러올 수 없습니다</h2>
+                <p id="errorMessage">다시 시도해주세요.</p>
+                <button class="btn btn-primary" onclick="location.href='survey.html'">
+                    테스트 다시하기
+                </button>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 MUTI Project</p>
+        </footer>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/result.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUTI 테스트 중...</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">🎵 MUTI</h1>
+        </header>
+
+        <main class="main-content">
+            <!-- Loading State -->
+            <div id="loadingState" class="loading">
+                <div class="spinner"></div>
+                <p>설문을 불러오는 중...</p>
+            </div>
+
+            <!-- Survey Container -->
+            <div id="surveyContainer" class="survey-container" style="display: none;">
+                <!-- Progress Bar -->
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <p class="progress-text">
+                    <span id="currentQuestion">1</span> / <span id="totalQuestions">8</span>
+                </p>
+
+                <!-- Question Card -->
+                <div class="question-card" id="questionCard">
+                    <h2 class="question-title" id="questionTitle">질문을 불러오는 중...</h2>
+
+                    <div class="options-container" id="optionsContainer">
+                        <!-- Options will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" id="prevBtn" style="visibility: hidden;">
+                        ← 이전
+                    </button>
+                    <button class="btn btn-primary" id="nextBtn" disabled>
+                        다음 →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="error-state" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <h2>오류가 발생했습니다</h2>
+                <p id="errorMessage">설문을 불러올 수 없습니다.</p>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    다시 시도
+                </button>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 MUTI Project</p>
+        </footer>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/survey.js"></script>
+</body>
+</html>
