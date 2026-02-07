@@ -1,1 +1,1 @@
-web: java -Dserver.port=$PORT $JAVA_OPTS -jar build/libs/muti-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+web: java -Xmx512m -Dserver.port=$PORT -jar build/libs/muti-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
