@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -190,16 +190,16 @@ public class AuthController {
      *
      * GET /api/v1/auth/me
      *
-     * @AuthenticationPrincipal이란?
-     * - Spring Security의 SecurityContext에서 인증 정보 추출
-     * - JwtAuthenticationFilter에서 설정한 userId를 가져옴
-     * - 인증이 필요한 API (SecurityConfig에서 인증 필요로 설정)
+     * SecurityContextHolder란?
+     * - Spring Security의 SecurityContext를 관리하는 클래스
+     * - 현재 스레드의 인증 정보를 저장/조회
+     * - JwtAuthenticationFilter에서 설정한 Authentication 객체 접근
      *
      * 작동 과정:
      * 1. 클라이언트가 Authorization 헤더에 JWT 포함하여 요청
      * 2. JwtAuthenticationFilter가 JWT 검증 및 userId 추출
-     * 3. SecurityContext에 userId 저장
-     * 4. @AuthenticationPrincipal이 userId를 메서드 파라미터로 주입
+     * 3. SecurityContext에 Authentication(principal=userId) 저장
+     * 4. 컨트롤러에서 SecurityContextHolder로 userId 추출
      * 5. Service에서 userId로 사용자 정보 조회
      *
      * 요청 예시:
@@ -216,11 +216,23 @@ public class AuthController {
      *   "createdAt": "2024-02-07T10:30:00"
      * }
      *
-     * @param userId 인증된 사용자 ID (SecurityContext에서 자동 주입)
      * @return 200 OK + UserInfoResponse
      */
     @GetMapping("/me")
-    public ResponseEntity<UserInfoResponse> getMyInfo(@AuthenticationPrincipal Long userId) {
+    public ResponseEntity<UserInfoResponse> getMyInfo() {
+        // SecurityContext에서 userId 추출
+        // Principal이 Long 또는 String일 수 있으므로 안전하게 처리
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Long userId;
+
+        if (principal instanceof Long) {
+            userId = (Long) principal;
+        } else if (principal instanceof String) {
+            userId = Long.parseLong((String) principal);
+        } else {
+            throw new IllegalStateException("Unexpected principal type: " + principal.getClass());
+        }
+
         log.info("GET /api/v1/auth/me - 내 정보 조회: userId={}", userId);
 
         UserInfoResponse response = authService.getUserInfo(userId);
