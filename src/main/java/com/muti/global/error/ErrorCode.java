@@ -50,7 +50,18 @@ public enum ErrorCode {
     // Comment
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "댓글을 찾을 수 없습니다."),
     COMMENT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "M002", "댓글을 삭제할 권한이 없습니다."),
-    COMMENT_PARENT_MISMATCH(HttpStatus.BAD_REQUEST, "M003", "부모 댓글이 해당 게시글에 속하지 않습니다.");
+    COMMENT_PARENT_MISMATCH(HttpStatus.BAD_REQUEST, "M003", "부모 댓글이 해당 게시글에 속하지 않습니다."),
+
+    // Music
+    MUSIC_NOT_FOUND(HttpStatus.NOT_FOUND, "MU001", "음악을 찾을 수 없습니다."),
+    MUSIC_ALREADY_EXISTS(HttpStatus.CONFLICT, "MU002", "이미 등록된 음악입니다."),
+
+    // Playlist
+    PLAYLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "PL001", "플레이리스트를 찾을 수 없습니다."),
+    PLAYLIST_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "PL002", "플레이리스트를 수정할 권한이 없습니다."),
+    PLAYLIST_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "PL003", "플레이리스트를 삭제할 권한이 없습니다."),
+    MUSIC_ALREADY_IN_PLAYLIST(HttpStatus.CONFLICT, "PL004", "이미 플레이리스트에 추가된 음악입니다."),
+    MUSIC_NOT_IN_PLAYLIST(HttpStatus.NOT_FOUND, "PL005", "플레이리스트에 해당 음악이 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
