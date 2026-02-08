@@ -34,7 +34,23 @@ public enum ErrorCode {
 
     // Share
     SHARE_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "SH001", "공유 링크를 찾을 수 없습니다."),
-    SHARE_LINK_EXPIRED(HttpStatus.GONE, "SH002", "만료된 공유 링크입니다.");
+    SHARE_LINK_EXPIRED(HttpStatus.GONE, "SH002", "만료된 공유 링크입니다."),
+
+    // User
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
+
+    // Board
+    BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, "B001", "게시판을 찾을 수 없습니다."),
+
+    // Post
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "게시글을 찾을 수 없습니다."),
+    POST_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "P002", "게시글을 수정할 권한이 없습니다."),
+    POST_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "P003", "게시글을 삭제할 권한이 없습니다."),
+
+    // Comment
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "댓글을 찾을 수 없습니다."),
+    COMMENT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "M002", "댓글을 삭제할 권한이 없습니다."),
+    COMMENT_PARENT_MISMATCH(HttpStatus.BAD_REQUEST, "M003", "부모 댓글이 해당 게시글에 속하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

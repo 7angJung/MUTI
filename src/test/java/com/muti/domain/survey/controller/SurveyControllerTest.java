@@ -7,7 +7,7 @@ import com.muti.domain.survey.dto.response.SurveyDto;
 import com.muti.domain.survey.dto.response.SurveyResultDto;
 import com.muti.domain.survey.service.SurveyResponseService;
 import com.muti.domain.survey.service.SurveyService;
-import com.muti.global.config.SecurityConfig;
+import com.muti.global.security.config.SecurityConfig;
 import com.muti.global.error.BusinessException;
 import com.muti.global.error.ErrorCode;
 import org.junit.jupiter.api.DisplayName;

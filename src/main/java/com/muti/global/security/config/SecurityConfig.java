@@ -112,6 +112,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/**",              // 회원가입, 로그인, 토큰 갱신
                                 "/api/v1/surveys/**",           // 설문 조회 (인증 불필요)
+                                "/api/v1/boards",               // 게시판 목록 조회
+                                "/api/v1/boards/*/posts",       // 게시판별 게시글 목록
+                                "/api/v1/posts/*/comments",     // 게시글별 댓글 목록
                                 "/actuator/**",                 // Health Check
                                 "/swagger-ui/**",               // Swagger UI
                                 "/v3/api-docs/**",              // Swagger API Docs

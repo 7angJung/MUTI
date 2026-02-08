@@ -24,10 +24,10 @@ MUTI(MUsic Type Indicator)는 사용자의 음악 선호도를 분석하여 16�
 
 ### MUTI란?
 MBTI의 음악 버전으로, 사용자의 음악 취향을 4개의 축으로 분석합니다:
-- **E(Energetic) ↔ I(Introspective)**: 에너제틱 vs 성찰적
-- **S(Sensory) ↔ F(Feeling)**: 감각적 vs 감성적
-- **A(Analog) ↔ D(Digital)**: 아날로그 vs 디지털
-- **P(Popular) ↔ U(Underground)**: 대중적 vs 언더그라운드
+- **E(Emotion) ↔ I(Instrument)**: 감정선 중심 vs 연주·프로덕션 중심
+- **S(Slow) ↔ F(Fast)**: 잔잔함 vs 에너지와 속도
+- **A(Acoustic) ↔ D(Digital)**: 어쿠스틱 질감 vs 전자적 사운드
+- **P(Popular) ↔ U(Underground)**: 대중성·멜로디 중심 vs 실험적·씬 기반
 
 ## 🛠 기술 스택
 
@@ -62,28 +62,36 @@ MBTI의 음악 버전으로, 사용자의 음악 취향을 4개의 축으로 분
 
 ### 4개의 축 (Axes)
 
-#### 1. E_I 축: Energetic ↔ Introspective
-- **E (Energetic)**: 빠르고 역동적인 음악 선호
-  - 댄스, 일렉트로닉, 업템포 록
-- **I (Introspective)**: 차분하고 사색적인 음악 선호
-  - 재즈, 클래식, 앰비언트
+#### 1. E_I 축: Emotion ↔ Instrument
+- **E (Emotion)**: 감정선 중심의 음악 선호
+  - 보컬의 감정, 가사 서사, 분위기에 민감
+  - 발라드, 소울, R&B
+- **I (Instrument)**: 연주·프로덕션 중심의 음악 선호
+  - 연주, 편곡, 사운드 디자인, 믹싱 등 구조적 요소 중시
+  - 재즈, 포스트록, 인스트루멘탈
 
-#### 2. S_F 축: Sensory ↔ Feeling
-- **S (Sensory)**: 리듬과 비트가 강한 음악 선호
-  - EDM, 힙합, 펑크
-- **F (Feeling)**: 멜로디와 가사가 중요한 음악 선호
-  - 발라드, 포크, 인디
+#### 2. S_F 축: Slow ↔ Fast
+- **S (Slow)**: 잔잔하고 여운이 긴 음악 선호
+  - 템포가 느리고 차분한 분위기
+  - 앰비언트, 발라드, 어쿠스틱
+- **F (Fast)**: 에너지 넘치고 빠른 음악 선호
+  - 빠른 템포와 강한 비트
+  - EDM, 댄스, 업템포 록
 
-#### 3. A_D 축: Analog ↔ Digital
-- **A (Analog)**: 아날로그적이고 생생한 음악 선호
-  - 라이브 음악, 어쿠스틱, 클래식
-- **D (Digital)**: 전자음악과 신스 사운드 선호
+#### 3. A_D 축: Acoustic ↔ Digital
+- **A (Acoustic)**: 자연스러운 어쿠스틱 질감 선호
+  - 어쿠스틱 악기, 라이브 감성
+  - 포크, 클래식, 어쿠스틱 팝
+- **D (Digital)**: 전자적 사운드 기반 음악 선호
+  - 신스, 샘플링, 이펙트 기반
   - 일렉트로닉, 신스팝, 테크노
 
 #### 4. P_U 축: Popular ↔ Underground
-- **P (Popular)**: 대중적이고 친숙한 음악 선호
+- **P (Popular)**: 대중성·멜로디 중심의 음악 선호
+  - 접근성 좋고 친숙한 멜로디
   - 팝, 차트 음악, 메인스트림
-- **U (Underground)**: 실험적이고 독특한 음악 선호
+- **U (Underground)**: 실험적이고 씬 기반의 음악 선호
+  - 비주류, 실험적 사운드
   - 인디, 실험음악, 언더그라운드
 
 ### 16가지 MUTI 타입
