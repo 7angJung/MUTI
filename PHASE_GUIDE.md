@@ -1065,17 +1065,1916 @@ tail -f logs/application.log
 
 ## Phase 2: CRUD 게시판
 
-**준비 중...**
+### 2.1 Phase 2 개요
 
-(Phase 1 완료 후 작성 예정)
+#### 🎯 목표
+
+**"사용자들이 게시글을 작성하고, 댓글을 달고, 좋아요를 누를 수 있는 커뮤니티 만들기"**
+
+#### 📦 만들 것들
+
+| 항목 | 설명 | 파일 |
+|------|------|------|
+| **Board Entity** | 게시판 정보 (자유게시판, MUTI 타입별) | `Board.java` |
+| **Post Entity** | 게시글 정보 | `Post.java` |
+| **Comment Entity** | 댓글 정보 (계층형 구조) | `Comment.java` |
+| **PostLike Entity** | 좋아요 정보 | `PostLike.java` |
+| **Repository** | 데이터베이스 접근 (4개) | `*Repository.java` |
+| **Service** | 비즈니스 로직 (4개) | `*Service.java` |
+| **Controller** | API 엔드포인트 (4개) | `*Controller.java` |
+| **DTO** | 요청/응답 객체 (8개) | `dto/*` |
+
+#### ⏱️ 예상 소요 시간
+
+```
+Week 4-5 (Day 22-35): 총 14일
+├─ Day 22-25: Entity & Repository (4일)
+├─ Day 26-29: Service & 비즈니스 로직 (4일)
+├─ Day 30-33: Controller & API (4일)
+└─ Day 34-35: 통합 테스트 & 정리 (2일)
+```
+
+**Phase 2 완료일**: 2026년 2월 9일 ✅
 
 ---
 
-## Phase 3: React 프론트엔드
+### 2.2 게시판 아키텍처 이해
 
-**준비 중...**
+#### 📊 데이터베이스 설계
 
-(Phase 2 완료 후 작성 예정)
+**비유: 건물의 구조**
+
+```
+게시판 (Board) = 건물
+├─ 자유게시판 = 1층 (누구나 이용)
+├─ ESAP 게시판 = 2층 (ESAP 타입 사용자)
+└─ IFDU 게시판 = 3층 (IFDU 타입 사용자)
+
+각 층마다:
+├─ 게시글 (Post) = 방
+│   ├─ 제목, 내용
+│   ├─ 조회수, 좋아요 수
+│   └─ 댓글 (Comment) = 방 안의 메모들
+│       ├─ 댓글
+│       └─ 대댓글 (부모-자식 관계)
+└─ 좋아요 (PostLike) = 좋아요 누른 기록
+```
+
+#### 🗄️ ERD (Entity Relationship Diagram)
+
+```
+┌──────────┐         ┌──────────┐         ┌──────────┐
+│  users   │         │  boards  │         │  posts   │
+│          │         │          │         │          │
+│  id (PK) │         │  id (PK) │         │  id (PK) │
+│  email   │         │  name    │         │  title   │
+│  username│         │  type    │         │  content │
+└────┬─────┘         └────┬─────┘         └────┬─────┘
+     │                    │                    │
+     │                    │ 1                  │ 1
+     │                    │                    │
+     │ 1                  │ N                  │ N
+     │              ┌─────┴─────┐         ┌───┴──────┐
+     │              │           │         │          │
+     │              ▼           ▼         ▼          │
+     │          ┌───────┐   ┌───────┐  ┌──────────┐ │
+     │          │ posts │   │ posts │  │ comments │ │
+     │          └───────┘   └───────┘  └──────────┘ │
+     │                                               │
+     │ 1                                             │ 1
+     │                                               │
+     │ N                                             │ N
+┌────┴──────┐                                  ┌────┴──────┐
+│ post_likes│                                  │ comments  │
+│           │                                  │ (self FK) │
+│  id (PK)  │                                  │ parent_id │
+│  post_id  │                                  └───────────┘
+│  user_id  │
+└───────────┘
+
+관계:
+- Board 1 : N Post (하나의 게시판에 여러 게시글)
+- User 1 : N Post (한 사용자가 여러 게시글 작성)
+- Post 1 : N Comment (하나의 게시글에 여러 댓글)
+- Post 1 : N PostLike (하나의 게시글에 여러 좋아요)
+- Comment 1 : N Comment (댓글에 대댓글, 계층형 구조)
+```
+
+---
+
+### 2.3 Entity 설계
+
+#### 📋 Board Entity
+
+**역할**: 게시판 종류 관리 (자유게시판, MUTI 타입별 게시판)
+
+```java
+@Entity
+@Table(name = "boards")
+public class Board extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 50)
+    private String name;  // "자유게시판", "ESAP 게시판"
+
+    @Column(columnDefinition = "TEXT")
+    private String description;  // 게시판 설명
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "board_type", length = 20)
+    private BoardType boardType;  // FREE, MUTI_TYPE
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "muti_type", length = 4)
+    private MutiType mutiType;  // ESAP, IFDU 등 (MUTI_TYPE인 경우)
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
+    private List<Post> posts = new ArrayList<>();
+}
+```
+
+**설명:**
+- `BoardType.FREE`: 자유게시판 (모두 이용 가능)
+- `BoardType.MUTI_TYPE`: MUTI 타입별 게시판 (16개)
+- `mutiType`: FREE인 경우 null, MUTI_TYPE인 경우 ESAP~IFDU 중 하나
+
+#### 📝 Post Entity
+
+**역할**: 게시글 정보 저장
+
+```java
+@Entity
+@Table(name = "posts", indexes = {
+    @Index(name = "idx_board_created", columnList = "board_id, created_at"),
+    @Index(name = "idx_user", columnList = "user_id")
+})
+public class Post extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_id", nullable = false)
+    private Board board;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @Column(name = "view_count")
+    private Integer viewCount = 0;  // 조회수
+
+    @Column(name = "like_count")
+    private Integer likeCount = 0;  // 좋아요 수
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostLike> likes = new ArrayList<>();
+
+    // 비즈니스 메서드
+    public void incrementViewCount() {
+        this.viewCount++;
+    }
+
+    public void incrementLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decrementLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+    }
+}
+```
+
+**핵심 포인트:**
+1. **지연 로딩 (Lazy Loading)**: `@ManyToOne(fetch = FetchType.LAZY)`
+   - Board, User는 필요할 때만 조회 (N+1 문제 방지)
+2. **인덱스**: 게시판별, 작성일별 빠른 조회
+3. **CASCADE**: 게시글 삭제 시 댓글, 좋아요도 함께 삭제
+4. **비즈니스 메서드**: 조회수, 좋아요 수 증가/감소 로직 캡슐화
+
+#### 💬 Comment Entity (계층형 구조)
+
+**역할**: 댓글 및 대댓글 저장
+
+```java
+@Entity
+@Table(name = "comments", indexes = {
+    @Index(name = "idx_post", columnList = "post_id"),
+    @Index(name = "idx_parent", columnList = "parent_comment_id")
+})
+public class Comment extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    // ⭐ 계층형 구조: 부모 댓글 참조 (null이면 최상위 댓글)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Comment parentComment;
+
+    // 대댓글 목록
+    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL)
+    private List<Comment> replies = new ArrayList<>();
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    // 비즈니스 메서드
+    public boolean isAuthor(Long userId) {
+        return this.user.getId().equals(userId);
+    }
+}
+```
+
+**계층형 구조 예시:**
+
+```
+댓글 1 (parentComment = null)
+├─ 대댓글 1-1 (parentComment = 댓글1)
+├─ 대댓글 1-2 (parentComment = 댓글1)
+│  └─ 대댓글 1-2-1 (parentComment = 대댓글1-2)
+└─ 대댓글 1-3 (parentComment = 댓글1)
+
+댓글 2 (parentComment = null)
+└─ 대댓글 2-1 (parentComment = 댓글2)
+```
+
+**조회 방법:**
+```java
+// 최상위 댓글만 조회
+List<Comment> topComments = commentRepository.findByPostIdAndParentCommentIsNull(postId);
+
+// 특정 댓글의 대댓글 조회
+List<Comment> replies = commentRepository.findByParentCommentId(parentId);
+```
+
+#### ❤️ PostLike Entity
+
+**역할**: 좋아요 기록 (중복 방지)
+
+```java
+@Entity
+@Table(name = "post_likes",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "user_id"}))
+public class PostLike extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", nullable = false)
+    private Post post;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+}
+```
+
+**핵심:**
+- `@UniqueConstraint`: 같은 사용자가 같은 게시글에 중복 좋아요 방지
+- 좋아요 토글: 있으면 삭제, 없으면 추가
+
+---
+
+### 2.4 Repository 구현
+
+#### 📦 BoardRepository
+
+```java
+@Repository
+public interface BoardRepository extends JpaRepository<Board, Long> {
+
+    // 이름으로 게시판 찾기
+    Optional<Board> findByName(String name);
+
+    // 게시판 타입으로 조회
+    List<Board> findByBoardType(BoardType boardType);
+
+    // MUTI 타입으로 조회
+    Optional<Board> findByMutiType(MutiType mutiType);
+}
+```
+
+#### 📦 PostRepository
+
+```java
+@Repository
+public interface PostRepository extends JpaRepository<Post, Long> {
+
+    // 게시판별 게시글 조회 (페이징)
+    @Query("SELECT p FROM Post p " +
+           "JOIN FETCH p.user " +
+           "WHERE p.board.id = :boardId " +
+           "ORDER BY p.createdAt DESC")
+    Page<Post> findByBoardId(@Param("boardId") Long boardId, Pageable pageable);
+
+    // 사용자별 게시글 조회
+    List<Post> findByUserId(Long userId);
+
+    // 조회수 증가 (벌크 연산)
+    @Modifying
+    @Query("UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :id")
+    void incrementViewCount(@Param("id") Long id);
+}
+```
+
+**포인트:**
+- `JOIN FETCH`: N+1 문제 해결 (User 정보를 한 번에 조회)
+- `@Modifying`: UPDATE 쿼리 실행
+
+#### 📦 CommentRepository
+
+```java
+@Repository
+public interface CommentRepository extends JpaRepository<Comment, Long> {
+
+    // 게시글별 댓글 조회
+    List<Comment> findByPostId(Long postId);
+
+    // 최상위 댓글만 조회
+    List<Comment> findByPostIdAndParentCommentIsNull(Long postId);
+
+    // 대댓글 조회
+    List<Comment> findByParentCommentId(Long parentId);
+
+    // 사용자별 댓글 조회
+    List<Comment> findByUserId(Long userId);
+
+    // 계층형 댓글 조회 (성능 최적화)
+    @Query("SELECT c FROM Comment c " +
+           "JOIN FETCH c.user " +
+           "LEFT JOIN FETCH c.parentComment " +
+           "WHERE c.post.id = :postId " +
+           "ORDER BY " +
+           "COALESCE(c.parentComment.id, c.id), " +
+           "c.createdAt ASC")
+    List<Comment> findByPostIdWithUserOrderByHierarchy(@Param("postId") Long postId);
+}
+```
+
+**계층형 정렬 로직:**
+```sql
+ORDER BY
+  COALESCE(c.parentComment.id, c.id),  -- 부모 ID 기준 그룹화
+  c.createdAt ASC                       -- 같은 그룹 내에서 시간순
+```
+
+결과:
+```
+1. 댓글1 (id=1, parent=null) → COALESCE(null, 1) = 1
+2. 대댓글1-1 (id=4, parent=1) → COALESCE(1, 4) = 1
+3. 대댓글1-2 (id=5, parent=1) → COALESCE(1, 5) = 1
+4. 댓글2 (id=2, parent=null) → COALESCE(null, 2) = 2
+5. 대댓글2-1 (id=6, parent=2) → COALESCE(2, 6) = 2
+```
+
+#### 📦 PostLikeRepository
+
+```java
+@Repository
+public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
+
+    // 좋아요 존재 여부
+    boolean existsByPostIdAndUserId(Long postId, Long userId);
+
+    // 좋아요 조회
+    Optional<PostLike> findByPostIdAndUserId(Long postId, Long userId);
+
+    // 좋아요 삭제
+    @Modifying
+    @Transactional
+    void deleteByPostIdAndUserId(Long postId, Long userId);
+
+    // 게시글별 좋아요 수
+    long countByPostId(Long postId);
+
+    // 게시글별 좋아요 목록
+    List<PostLike> findByPostId(Long postId);
+
+    // 사용자별 좋아요 목록
+    List<PostLike> findByUserId(Long userId);
+}
+```
+
+---
+
+### 2.5 Service 비즈니스 로직
+
+#### 🎯 PostService - 게시글 서비스
+
+**핵심 기능:**
+1. 게시글 작성 (인증 필요)
+2. 게시글 조회 (조회수 증가)
+3. 게시글 수정 (작성자만)
+4. 게시글 삭제 (작성자만)
+5. 게시글 목록 (페이징)
+
+```java
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PostService {
+
+    private final PostRepository postRepository;
+    private final BoardService boardService;
+    private final UserRepository userRepository;
+
+    // 1. 게시글 작성
+    @Transactional
+    public PostDetailDto createPost(CreatePostRequest request, Long userId) {
+        // 게시판 조회
+        Board board = boardService.getBoardEntity(request.getBoardId());
+
+        // 사용자 조회
+        User user = getUserEntity(userId);
+
+        // 게시글 생성
+        Post post = Post.builder()
+                .board(board)
+                .user(user)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .build();
+
+        Post saved = postRepository.save(post);
+
+        return PostDetailDto.from(saved);
+    }
+
+    // 2. 게시글 조회 (조회수 증가)
+    @Transactional
+    public PostDetailDto getPost(Long id, Long currentUserId) {
+        Post post = getPostEntity(id);
+
+        // 조회수 증가
+        post.incrementViewCount();
+
+        // 작성자 여부 확인
+        boolean isAuthor = post.isAuthor(currentUserId);
+
+        return PostDetailDto.from(post, isAuthor);
+    }
+
+    // 3. 게시글 수정 (작성자만)
+    @Transactional
+    public PostDetailDto updatePost(Long id, UpdatePostRequest request, Long userId) {
+        Post post = getPostEntity(id);
+
+        // 권한 검증
+        if (!post.isAuthor(userId)) {
+            throw new BusinessException(ErrorCode.POST_UPDATE_FORBIDDEN);
+        }
+
+        // 수정
+        post.update(request.getTitle(), request.getContent());
+
+        return PostDetailDto.from(post);
+    }
+
+    // 4. 게시글 삭제 (작성자만)
+    @Transactional
+    public void deletePost(Long id, Long userId) {
+        Post post = getPostEntity(id);
+
+        // 권한 검증
+        if (!post.isAuthor(userId)) {
+            throw new BusinessException(ErrorCode.POST_DELETE_FORBIDDEN);
+        }
+
+        postRepository.delete(post);
+    }
+
+    // 5. 게시글 목록 (페이징)
+    public Page<PostDto> getPostsByBoard(Long boardId, Pageable pageable, Long currentUserId) {
+        Page<Post> posts = postRepository.findByBoardId(boardId, pageable);
+
+        return posts.map(post -> PostDto.from(post, post.isAuthor(currentUserId)));
+    }
+
+    // Helper 메서드
+    private Post getPostEntity(Long id) {
+        return postRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+    }
+
+    private User getUserEntity(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+}
+```
+
+**비즈니스 로직 포인트:**
+1. **조회수 증가**: 게시글 조회 시마다 자동 증가
+2. **권한 검증**: 수정/삭제는 작성자만 가능
+3. **페이징**: 게시판별 게시글 목록은 페이징 처리
+4. **작성자 여부**: 응답에 isAuthor 필드 포함 (프론트에서 수정/삭제 버튼 표시용)
+
+#### ❤️ PostLikeService - 좋아요 서비스
+
+**핵심 기능:**
+1. 좋아요 토글 (있으면 삭제, 없으면 추가)
+
+```java
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PostLikeService {
+
+    private final PostLikeRepository postLikeRepository;
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
+
+    // 좋아요 토글
+    @Transactional
+    public LikeResponse toggleLike(Long postId, Long userId) {
+        // 게시글 조회
+        Post post = getPostEntity(postId);
+
+        // 사용자 조회
+        User user = getUserEntity(userId);
+
+        // 좋아요 존재 여부 확인
+        boolean exists = postLikeRepository.existsByPostIdAndUserId(postId, userId);
+
+        if (exists) {
+            // 좋아요 취소
+            postLikeRepository.deleteByPostIdAndUserId(postId, userId);
+            post.decrementLikeCount();
+
+            return LikeResponse.builder()
+                    .isLiked(false)
+                    .likeCount(post.getLikeCount())
+                    .build();
+        } else {
+            // 좋아요 추가
+            PostLike postLike = PostLike.builder()
+                    .post(post)
+                    .user(user)
+                    .build();
+
+            postLikeRepository.save(postLike);
+            post.incrementLikeCount();
+
+            return LikeResponse.builder()
+                    .isLiked(true)
+                    .likeCount(post.getLikeCount())
+                    .build();
+        }
+    }
+
+    private Post getPostEntity(Long postId) {
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+    }
+
+    private User getUserEntity(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+}
+```
+
+**토글 로직:**
+```
+1. 좋아요 존재 확인
+   └─ EXISTS → 삭제 + likeCount--
+   └─ NOT EXISTS → 추가 + likeCount++
+
+2. 응답
+   {
+     "isLiked": true/false,
+     "likeCount": 10
+   }
+```
+
+#### 💬 CommentService - 댓글 서비스
+
+**핵심 기능:**
+1. 댓글 작성
+2. 대댓글 작성 (부모 댓글 ID 지정)
+3. 댓글 삭제 (작성자만)
+4. 게시글별 댓글 조회 (계층형)
+
+```java
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class CommentService {
+
+    private final CommentRepository commentRepository;
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
+
+    // 1. 댓글 작성
+    @Transactional
+    public CommentDto createComment(Long postId, CreateCommentRequest request, Long userId) {
+        Post post = getPostEntity(postId);
+        User user = getUserEntity(userId);
+
+        // 부모 댓글 검증 (대댓글인 경우)
+        Comment parentComment = null;
+        if (request.getParentCommentId() != null) {
+            parentComment = getCommentEntity(request.getParentCommentId());
+
+            // 부모 댓글이 같은 게시글에 속하는지 확인
+            if (!parentComment.getPost().getId().equals(postId)) {
+                throw new BusinessException(ErrorCode.COMMENT_PARENT_MISMATCH);
+            }
+        }
+
+        // 댓글 생성
+        Comment comment = Comment.builder()
+                .post(post)
+                .user(user)
+                .content(request.getContent())
+                .parentComment(parentComment)
+                .build();
+
+        Comment saved = commentRepository.save(comment);
+
+        return CommentDto.from(saved, true);
+    }
+
+    // 2. 댓글 삭제 (작성자만)
+    @Transactional
+    public void deleteComment(Long commentId, Long userId) {
+        Comment comment = getCommentEntity(commentId);
+
+        // 권한 검증
+        if (!comment.isAuthor(userId)) {
+            throw new BusinessException(ErrorCode.COMMENT_DELETE_FORBIDDEN);
+        }
+
+        commentRepository.delete(comment);
+    }
+
+    // 3. 게시글별 댓글 조회 (계층형)
+    public List<CommentDto> getCommentsByPost(Long postId, Long currentUserId) {
+        // 게시글 존재 확인
+        getPostEntity(postId);
+
+        // 계층형 댓글 조회
+        List<Comment> comments = commentRepository
+                .findByPostIdWithUserOrderByHierarchy(postId);
+
+        return comments.stream()
+                .map(comment -> CommentDto.from(comment, comment.isAuthor(currentUserId)))
+                .collect(Collectors.toList());
+    }
+
+    private Post getPostEntity(Long postId) {
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
+    }
+
+    private User getUserEntity(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private Comment getCommentEntity(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+    }
+}
+```
+
+---
+
+### 2.6 Controller API 설계
+
+#### 📡 BoardController
+
+```java
+@RestController
+@RequestMapping("/api/v1/boards")
+@RequiredArgsConstructor
+public class BoardController {
+
+    private final BoardService boardService;
+
+    // 게시판 목록 조회
+    @GetMapping
+    public ApiResponse<List<BoardDto>> getAllBoards() {
+        List<BoardDto> boards = boardService.getAllBoards();
+        return ApiResponse.success(boards);
+    }
+
+    // 게시판 생성 (관리자만)
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
+    public ApiResponse<BoardDto> createBoard(@Valid @RequestBody CreateBoardRequest request) {
+        BoardDto board = boardService.createBoard(request);
+        return ApiResponse.success(board);
+    }
+}
+```
+
+#### 📡 PostController
+
+```java
+@RestController
+@RequestMapping("/api/v1/posts")
+@RequiredArgsConstructor
+public class PostController {
+
+    private final PostService postService;
+    private final PostLikeService postLikeService;
+
+    // 게시글 작성
+    @PostMapping
+    public ApiResponse<PostDetailDto> createPost(
+            @Valid @RequestBody CreatePostRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        PostDetailDto post = postService.createPost(request, principal.getId());
+        return ApiResponse.success(post);
+    }
+
+    // 게시글 조회
+    @GetMapping("/{id}")
+    public ApiResponse<PostDetailDto> getPost(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        Long userId = (principal != null) ? principal.getId() : null;
+        PostDetailDto post = postService.getPost(id, userId);
+        return ApiResponse.success(post);
+    }
+
+    // 게시글 수정
+    @PutMapping("/{id}")
+    public ApiResponse<PostDetailDto> updatePost(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePostRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        PostDetailDto post = postService.updatePost(id, request, principal.getId());
+        return ApiResponse.success(post);
+    }
+
+    // 게시글 삭제
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deletePost(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        postService.deletePost(id, principal.getId());
+        return ApiResponse.success(null);
+    }
+
+    // 게시판별 게시글 목록
+    @GetMapping
+    public ApiResponse<Page<PostDto>> getPostsByBoard(
+            @RequestParam Long boardId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        Long userId = (principal != null) ? principal.getId() : null;
+        Page<PostDto> posts = postService.getPostsByBoard(boardId, pageable, userId);
+        return ApiResponse.success(posts);
+    }
+
+    // 좋아요 토글
+    @PostMapping("/{id}/like")
+    public ApiResponse<LikeResponse> toggleLike(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+
+        LikeResponse response = postLikeService.toggleLike(id, principal.getId());
+        return ApiResponse.success(response);
+    }
+}
+```
+
+---
+
+### 2.7 Flyway 마이그레이션
+
+#### V5__create_board_tables.sql
+
+```sql
+-- boards 테이블
+CREATE TABLE boards (
+    board_id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    description TEXT,
+    board_type VARCHAR(20) NOT NULL,
+    muti_type VARCHAR(4),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_board_name UNIQUE (name),
+    CONSTRAINT unique_muti_type UNIQUE (muti_type)
+);
+
+-- posts 테이블
+CREATE TABLE posts (
+    post_id BIGSERIAL PRIMARY KEY,
+    board_id BIGINT NOT NULL REFERENCES boards(board_id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    view_count INTEGER NOT NULL DEFAULT 0,
+    like_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_posts_board_created ON posts(board_id, created_at DESC);
+CREATE INDEX idx_posts_user ON posts(user_id);
+
+-- comments 테이블
+CREATE TABLE comments (
+    comment_id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    parent_comment_id BIGINT REFERENCES comments(comment_id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_comments_post ON comments(post_id);
+CREATE INDEX idx_comments_parent ON comments(parent_comment_id);
+
+-- post_likes 테이블
+CREATE TABLE post_likes (
+    like_id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_post_like UNIQUE (post_id, user_id)
+);
+
+CREATE INDEX idx_post_likes_post ON post_likes(post_id);
+CREATE INDEX idx_post_likes_user ON post_likes(user_id);
+```
+
+#### V6__insert_initial_boards.sql
+
+```sql
+-- 자유게시판
+INSERT INTO boards (name, description, board_type, muti_type)
+VALUES ('자유게시판', '자유롭게 이야기를 나눠보세요!', 'FREE', NULL);
+
+-- MUTI 타입별 게시판 (16개)
+INSERT INTO boards (name, description, board_type, muti_type) VALUES
+('ESAP 게시판', '감성적이고 잔잔한 어쿠스틱 대중 음악을 좋아하는 분들의 공간', 'MUTI_TYPE', 'ESAP'),
+('ESAU 게시판', '감성적이고 잔잔한 어쿠스틱 실험 음악을 좋아하는 분들의 공간', 'MUTI_TYPE', 'ESAU'),
+-- ... (14개 더)
+('IFDU 게시판', '연주 중심의 빠른 디지털 실험 음악을 좋아하는 분들의 공간', 'MUTI_TYPE', 'IFDU');
+```
+
+---
+
+### 2.8 테스트 작성
+
+Phase 2에서는 **57개의 테스트**를 작성했습니다:
+
+#### Repository 테스트 (37개)
+
+```java
+@DataJpaTest
+@Import(TestJpaConfig.class)
+@DisplayName("PostRepository 통합 테스트")
+class PostRepositoryTest {
+
+    @Test
+    @DisplayName("게시글 저장 및 조회")
+    void savePost() {
+        // given
+        Post post = Post.builder()
+                .board(board)
+                .user(user)
+                .title("테스트 제목")
+                .content("테스트 내용")
+                .build();
+
+        // when
+        Post saved = postRepository.save(post);
+
+        // then
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getTitle()).isEqualTo("테스트 제목");
+    }
+}
+```
+
+#### Service 테스트 (20개)
+
+```java
+@ExtendWith(MockitoExtension.class)
+@DisplayName("PostService 테스트")
+class PostServiceTest {
+
+    @Mock
+    private PostRepository postRepository;
+
+    @InjectMocks
+    private PostService postService;
+
+    @Test
+    @DisplayName("게시글 작성 - 성공")
+    void createPost_Success() {
+        // given
+        given(boardService.getBoardEntity(any())).willReturn(board);
+        given(userRepository.findById(any())).willReturn(Optional.of(user));
+        given(postRepository.save(any())).willReturn(savedPost);
+
+        // when
+        PostDetailDto result = postService.createPost(request, userId);
+
+        // then
+        assertThat(result.getTitle()).isEqualTo("테스트 제목");
+        verify(postRepository).save(any(Post.class));
+    }
+}
+```
+
+---
+
+### 2.9 Phase 2 완료 체크리스트
+
+```
+✅ Entity 설계 (Board, Post, Comment, PostLike)
+✅ Repository 구현 (4개)
+✅ Service 비즈니스 로직 (4개)
+✅ Controller API 엔드포인트 (4개)
+✅ DTO 정의 (8개)
+✅ Flyway 마이그레이션 (V5, V6)
+✅ 초기 데이터 생성 (17개 게시판)
+✅ Repository 테스트 (37개)
+✅ Service 테스트 (20개)
+✅ 전체 테스트 통과 (57개)
+✅ 실제 동작 확인 (GET /api/v1/boards)
+✅ feature/board → dev 머지
+✅ 원격 저장소 push
+```
+
+---
+
+### 2.10 Phase 2 주요 학습 내용
+
+#### 🎓 배운 개념들
+
+1. **JPA 연관관계**
+   - @OneToMany, @ManyToOne
+   - FetchType.LAZY (지연 로딩)
+   - CASCADE, orphanRemoval
+
+2. **계층형 구조**
+   - Self-referencing Entity
+   - 부모-자식 관계 구현
+   - 계층형 정렬 쿼리
+
+3. **성능 최적화**
+   - N+1 문제 해결 (JOIN FETCH)
+   - 인덱스 설계
+   - 벌크 연산 (@Modifying)
+
+4. **비즈니스 로직**
+   - 권한 검증 (작성자만 수정/삭제)
+   - 조회수 증가
+   - 좋아요 토글
+
+5. **페이징**
+   - Pageable, Page<T>
+   - 정렬 기준 지정
+
+6. **테스트**
+   - @DataJpaTest (Repository)
+   - @ExtendWith(MockitoExtension.class) (Service)
+   - given-when-then 패턴
+
+---
+
+### 2.11 다음 단계
+
+Phase 2 완료! 이제 Phase 3으로 진행합니다:
+
+**Phase 3: Music/Playlist 도메인**
+- Music Entity: 음악 정보
+- Playlist Entity: 플레이리스트
+- Spotify API 연동
+- 타입별 음악 추천
+
+준비되셨으면 **"Phase 3 시작!"** 이라고 말씀해주세요! 🚀
+
+---
+
+## Phase 3: Music/Playlist 도메인
+
+### 3.1 Phase 3 개요
+
+#### 🎯 목표
+
+**"사용자들이 음악을 탐색하고, 플레이리스트를 만들고, MUTI 타입별 추천 음악을 받을 수 있게 만들기"**
+
+#### 📦 만들 것들
+
+| 항목 | 설명 | 파일 |
+|------|------|------|
+| **Genre Enum** | 20개 음악 장르 정의 | `Genre.java` |
+| **Music Entity** | 음악 메타데이터 (Spotify/YouTube ID 포함) | `Music.java` |
+| **Playlist Entity** | 사용자 플레이리스트 (공개/비공개, MUTI 타입) | `Playlist.java` |
+| **PlaylistMusic Entity** | 플레이리스트-음악 중간 테이블 (순서 관리) | `PlaylistMusic.java` |
+| **Repository** | 데이터베이스 접근 (3개) | `*Repository.java` |
+| **Service** | 비즈니스 로직 (2개) | `MusicService.java`, `PlaylistService.java` |
+| **Controller** | API 엔드포인트 (2개) | `MusicController.java`, `PlaylistController.java` |
+| **DTO** | 요청/응답 객체 (10개) | `dto/*` |
+
+#### ⏱️ 예상 소요 시간
+
+```
+Week 6 (Day 36-42): 총 7일
+├─ Day 36-37: Entity & Repository (2일)
+├─ Day 38-40: Service & 비즈니스 로직 (3일)
+└─ Day 41-42: Controller & API 테스트 (2일)
+```
+
+**Phase 3 완료일**: 2026년 2월 9일 ✅
+
+---
+
+### 3.2 Music/Playlist 아키텍처 이해
+
+#### 📊 데이터베이스 설계
+
+**비유: 음악 스트리밍 서비스**
+
+```
+Music (음악) = 곡 라이브러리
+├─ 기본 정보: 제목, 아티스트, 앨범
+├─ 메타데이터: 장르, 재생시간, 발매일
+└─ 외부 ID: Spotify ID, YouTube ID (향후 API 통합용)
+
+Playlist (플레이리스트) = 사용자가 만든 앨범
+├─ 공개 플레이리스트 (모두가 볼 수 있음)
+├─ 비공개 플레이리스트 (본인만 볼 수 있음)
+└─ MUTI 타입 플레이리스트 (ESAP, IFDU 등 타입별 추천)
+
+PlaylistMusic (중간 테이블) = 플레이리스트 안의 곡 순서
+├─ 플레이리스트 ID
+├─ 음악 ID
+└─ 순서 (orderIndex: 0, 1, 2, ...)
+```
+
+#### 🗄️ ERD (Entity Relationship Diagram)
+
+```
+┌──────────┐         ┌──────────────┐         ┌──────────┐
+│  users   │         │   playlists  │         │  musics  │
+│          │         │              │         │          │
+│  id (PK) │         │  id (PK)     │         │  id (PK) │
+│  email   │         │  name        │         │  title   │
+│  username│         │  is_public   │         │  artist  │
+└────┬─────┘         │  muti_type   │         │  album   │
+     │               └────┬─────────┘         │  genre   │
+     │ 1                  │                   │ spotify_id│
+     │                    │ 1                 └────┬─────┘
+     │ N                  │                        │
+┌────┴──────────┐         │ N                      │ 1
+│   playlists   │         │                        │
+└───────────────┘         │                        │ N
+                          │                   ┌────┴────────┐
+                          │                   │playlist_    │
+                          │                   │musics       │
+                          │ 1                 │             │
+                          │                   │  id (PK)    │
+                          └───────────────────│playlist_id  │
+                                      N       │  music_id   │
+                                              │order_index  │
+                                              └─────────────┘
+
+관계:
+- User 1 : N Playlist (한 사용자가 여러 플레이리스트 소유)
+- Playlist N : M Music (다대다, PlaylistMusic 중간 테이블)
+- PlaylistMusic: 플레이리스트 안의 곡 순서 관리
+```
+
+---
+
+### 3.3 Entity 설계
+
+#### 📝 Music Entity (음악)
+
+**역할**: 음악의 메타데이터를 저장하는 도메인 모델
+
+**핵심 필드:**
+```java
+@Entity
+@Table(name = "musics")
+public class Music {
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String title;          // 곡 제목
+    private String artist;         // 아티스트
+    private String album;          // 앨범명
+
+    @Enumerated(EnumType.STRING)
+    private Genre genre;           // 장르 (POP, ROCK, ...)
+
+    private String spotifyId;      // Spotify API 연동용
+    private String youtubeId;      // YouTube API 연동용
+    private Integer durationMs;    // 재생 시간 (밀리초)
+    private LocalDate releaseDate; // 발매일
+
+    private String imageUrl;       // 앨범 커버
+    private String previewUrl;     // 미리듣기 URL
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+}
+```
+
+**비즈니스 메서드:**
+```java
+// 재생 시간을 "3:45" 형식으로 변환
+public String getFormattedDuration() {
+    int seconds = durationMs / 1000;
+    int minutes = seconds / 60;
+    int remainingSeconds = seconds % 60;
+    return String.format("%d:%02d", minutes, remainingSeconds);
+}
+```
+
+#### 📝 Playlist Entity (플레이리스트)
+
+**역할**: 사용자가 만든 플레이리스트 정보 저장
+
+**핵심 필드:**
+```java
+@Entity
+@Table(name = "playlists")
+public class Playlist {
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    private String name;           // 플레이리스트 이름
+    private String description;    // 설명
+
+    @ManyToOne
+    private User user;             // 소유자
+
+    private Boolean isPublic;      // 공개/비공개
+
+    @Enumerated(EnumType.STRING)
+    private MutiType mutiType;     // MUTI 타입별 추천용
+
+    @OneToMany(mappedBy = "playlist")
+    private List<PlaylistMusic> playlistMusics;
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+}
+```
+
+**비즈니스 메서드:**
+```java
+// 소유자 확인
+public boolean isOwner(Long userId) {
+    return this.user.getId().equals(userId);
+}
+
+// 음악 추가
+public void addMusic(Music music, Integer orderIndex) {
+    PlaylistMusic pm = PlaylistMusic.builder()
+        .playlist(this)
+        .music(music)
+        .orderIndex(orderIndex)
+        .build();
+    this.playlistMusics.add(pm);
+}
+```
+
+#### 📝 PlaylistMusic Entity (중간 테이블)
+
+**역할**: 플레이리스트-음악 다대다 관계 + 순서 관리
+
+**핵심 필드:**
+```java
+@Entity
+@Table(name = "playlist_musics",
+    uniqueConstraints = @UniqueConstraint(
+        columnNames = {"playlist_id", "music_id"}
+    ))
+public class PlaylistMusic {
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @ManyToOne
+    private Playlist playlist;
+
+    @ManyToOne
+    private Music music;
+
+    private Integer orderIndex;    // 플레이리스트 내 순서
+
+    @CreatedDate
+    private LocalDateTime createdAt;
+}
+```
+
+**왜 중간 테이블이 필요한가?**
+
+```
+일반 다대다 관계 (X):
+Playlist ------ Music
+- 순서 정보 없음
+- 같은 곡을 여러 번 추가 불가
+
+중간 테이블 사용 (O):
+Playlist --(1:N)-- PlaylistMusic --(N:1)-- Music
+- orderIndex로 순서 관리
+- 추가 정보 (추가 날짜 등) 저장 가능
+```
+
+#### 📝 Genre Enum (장르)
+
+**역할**: 음악 장르 정의
+
+```java
+public enum Genre {
+    POP("팝"),
+    ROCK("록"),
+    HIPHOP("힙합"),
+    RNB("알앤비"),
+    JAZZ("재즈"),
+    CLASSICAL("클래식"),
+    ELECTRONIC("일렉트로닉"),
+    FOLK("포크"),
+    INDIE("인디"),
+    BALLAD("발라드"),
+    DANCE("댄스"),
+    METAL("메탈"),
+    ALTERNATIVE("얼터너티브"),
+    SOUL("소울"),
+    COUNTRY("컨트리"),
+    REGGAE("레게"),
+    BLUES("블루스"),
+    AMBIENT("앰비언트"),
+    EXPERIMENTAL("실험음악"),
+    OTHER("기타");
+
+    private final String korean;
+}
+```
+
+---
+
+### 3.4 Repository 구현
+
+#### 📂 MusicRepository
+
+**역할**: 음악 데이터 접근
+
+**주요 메서드:**
+```java
+public interface MusicRepository extends JpaRepository<Music, Long> {
+    // Spotify ID로 음악 찾기
+    Optional<Music> findBySpotifyId(String spotifyId);
+    boolean existsBySpotifyId(String spotifyId);
+
+    // 검색
+    @Query("SELECT m FROM Music m WHERE " +
+           "LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(m.artist) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Music> searchByTitleOrArtist(@Param("keyword") String keyword,
+                                       Pageable pageable);
+
+    // 장르별 조회
+    Page<Music> findByGenre(Genre genre, Pageable pageable);
+
+    // 최신 음악
+    List<Music> findTop10ByOrderByReleaseDateDesc();
+}
+```
+
+**활용 예시:**
+```java
+// 검색: "아이유" 검색
+Page<Music> results = musicRepository
+    .searchByTitleOrArtist("아이유", PageRequest.of(0, 20));
+
+// 장르별: POP 장르 음악
+Page<Music> popMusics = musicRepository
+    .findByGenre(Genre.POP, PageRequest.of(0, 20));
+```
+
+#### 📂 PlaylistRepository
+
+**역할**: 플레이리스트 데이터 접근
+
+**주요 메서드:**
+```java
+public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
+    // 사용자별 조회
+    @Query("SELECT p FROM Playlist p WHERE p.user.id = :userId")
+    List<Playlist> findByUserId(@Param("userId") Long userId);
+
+    // 공개 플레이리스트 (페이징)
+    @Query("SELECT p FROM Playlist p WHERE p.isPublic = true")
+    Page<Playlist> findPublicPlaylists(Pageable pageable);
+
+    // MUTI 타입별 추천 플레이리스트
+    @Query("SELECT p FROM Playlist p WHERE " +
+           "p.mutiType = :mutiType AND p.isPublic = true")
+    List<Playlist> findPublicPlaylistsByMutiType(
+        @Param("mutiType") MutiType mutiType);
+
+    // 검색
+    @Query("SELECT p FROM Playlist p WHERE " +
+           "p.isPublic = true AND " +
+           "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Playlist> searchByName(@Param("keyword") String keyword,
+                                 Pageable pageable);
+}
+```
+
+#### 📂 PlaylistMusicRepository
+
+**역할**: 플레이리스트-음악 관계 관리
+
+**주요 메서드:**
+```java
+public interface PlaylistMusicRepository
+    extends JpaRepository<PlaylistMusic, Long> {
+
+    // 플레이리스트의 음악 목록 (순서대로)
+    @Query("SELECT pm FROM PlaylistMusic pm " +
+           "JOIN FETCH pm.music " +
+           "WHERE pm.playlist.id = :playlistId " +
+           "ORDER BY pm.orderIndex")
+    List<PlaylistMusic> findByPlaylistIdOrderByOrderIndex(
+        @Param("playlistId") Long playlistId);
+
+    // 중복 확인
+    boolean existsByPlaylistIdAndMusicId(Long playlistId, Long musicId);
+
+    // 최대 orderIndex 찾기 (다음 순서 계산용)
+    @Query("SELECT COALESCE(MAX(pm.orderIndex), -1) " +
+           "FROM PlaylistMusic pm " +
+           "WHERE pm.playlist.id = :playlistId")
+    Integer findMaxOrderIndexByPlaylistId(@Param("playlistId") Long playlistId);
+
+    // 음악 삭제
+    @Modifying
+    void deleteByPlaylistIdAndMusicId(Long playlistId, Long musicId);
+}
+```
+
+---
+
+### 3.5 Service 비즈니스 로직
+
+#### 🔧 MusicService
+
+**역할**: 음악 관련 비즈니스 로직 처리
+
+**주요 메서드:**
+```java
+@Service
+@Transactional(readOnly = true)
+public class MusicService {
+
+    // 음악 등록 (관리자만)
+    @Transactional
+    public MusicDto createMusic(CreateMusicRequest request) {
+        // 1. Spotify ID 중복 체크
+        if (request.getSpotifyId() != null &&
+            musicRepository.existsBySpotifyId(request.getSpotifyId())) {
+            throw new BusinessException(ErrorCode.MUSIC_ALREADY_EXISTS);
+        }
+
+        // 2. Music 엔티티 생성 및 저장
+        Music music = Music.builder()
+            .title(request.getTitle())
+            .artist(request.getArtist())
+            .genre(request.getGenre())
+            .spotifyId(request.getSpotifyId())
+            .build();
+
+        Music saved = musicRepository.save(music);
+        return MusicDto.from(saved);
+    }
+
+    // 음악 검색
+    public Page<MusicDto> searchMusic(String keyword, Pageable pageable) {
+        return musicRepository
+            .searchByTitleOrArtist(keyword, pageable)
+            .map(MusicDto::from);
+    }
+
+    // 장르별 조회
+    public Page<MusicDto> getMusicsByGenre(Genre genre, Pageable pageable) {
+        return musicRepository
+            .findByGenre(genre, pageable)
+            .map(MusicDto::from);
+    }
+}
+```
+
+#### 🔧 PlaylistService
+
+**역할**: 플레이리스트 관련 비즈니스 로직 처리
+
+**주요 메서드:**
+```java
+@Service
+@Transactional(readOnly = true)
+public class PlaylistService {
+
+    // 플레이리스트 생성
+    @Transactional
+    public PlaylistDto createPlaylist(CreatePlaylistRequest request,
+                                       Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Playlist playlist = Playlist.builder()
+            .name(request.getName())
+            .description(request.getDescription())
+            .user(user)
+            .isPublic(request.getIsPublic())
+            .build();
+
+        Playlist saved = playlistRepository.save(playlist);
+        return PlaylistDto.from(saved, userId);
+    }
+
+    // 음악 추가
+    @Transactional
+    public void addMusicToPlaylist(Long playlistId,
+                                    AddMusicToPlaylistRequest request,
+                                    Long userId) {
+        // 1. 플레이리스트 조회 및 권한 확인
+        Playlist playlist = getPlaylistOrThrow(playlistId);
+        validateOwner(playlist, userId);
+
+        // 2. 음악 조회
+        Music music = musicService.getMusicEntity(request.getMusicId());
+
+        // 3. 중복 체크
+        if (playlistMusicRepository
+                .existsByPlaylistIdAndMusicId(playlistId, music.getId())) {
+            throw new BusinessException(ErrorCode.MUSIC_ALREADY_IN_PLAYLIST);
+        }
+
+        // 4. 다음 orderIndex 계산
+        Integer maxOrder = playlistMusicRepository
+            .findMaxOrderIndexByPlaylistId(playlistId);
+        Integer nextOrder = maxOrder + 1;
+
+        // 5. PlaylistMusic 생성
+        PlaylistMusic pm = PlaylistMusic.builder()
+            .playlist(playlist)
+            .music(music)
+            .orderIndex(nextOrder)
+            .build();
+
+        playlistMusicRepository.save(pm);
+    }
+
+    // 권한 검증
+    private void validateOwner(Playlist playlist, Long userId) {
+        if (!playlist.isOwner(userId)) {
+            throw new BusinessException(ErrorCode.PLAYLIST_UPDATE_FORBIDDEN);
+        }
+    }
+}
+```
+
+---
+
+### 3.6 Controller API 설계
+
+#### 🌐 MusicController
+
+**역할**: 음악 관련 REST API 제공
+
+**엔드포인트:**
+```java
+@RestController
+@RequestMapping("/api/v1/musics")
+public class MusicController {
+
+    // 음악 등록 (관리자만)
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
+    public ApiResponse<MusicDto> createMusic(
+            @Valid @RequestBody CreateMusicRequest request) {
+        MusicDto music = musicService.createMusic(request);
+        return ApiResponse.success(music);
+    }
+
+    // 음악 검색
+    @GetMapping("/search")
+    public ApiResponse<Page<MusicDto>> searchMusic(
+            @RequestParam String keyword,
+            Pageable pageable) {
+        Page<MusicDto> musics = musicService.searchMusic(keyword, pageable);
+        return ApiResponse.success(musics);
+    }
+
+    // 장르별 조회
+    @GetMapping("/genre/{genre}")
+    public ApiResponse<Page<MusicDto>> getMusicsByGenre(
+            @PathVariable Genre genre,
+            Pageable pageable) {
+        Page<MusicDto> musics = musicService.getMusicsByGenre(genre, pageable);
+        return ApiResponse.success(musics);
+    }
+
+    // 최신 음악
+    @GetMapping("/recent")
+    public ApiResponse<List<MusicDto>> getRecentMusics() {
+        List<MusicDto> musics = musicService.getRecentMusics();
+        return ApiResponse.success(musics);
+    }
+}
+```
+
+#### 🌐 PlaylistController
+
+**역할**: 플레이리스트 관련 REST API 제공
+
+**엔드포인트:**
+```java
+@RestController
+@RequestMapping("/api/v1/playlists")
+public class PlaylistController {
+
+    // 플레이리스트 생성
+    @PostMapping
+    public ApiResponse<PlaylistDto> createPlaylist(
+            @Valid @RequestBody CreatePlaylistRequest request) {
+        Long userId = getCurrentUserId();
+        PlaylistDto playlist = playlistService.createPlaylist(request, userId);
+        return ApiResponse.success(playlist);
+    }
+
+    // 음악 추가
+    @PostMapping("/{id}/musics")
+    public ApiResponse<Void> addMusicToPlaylist(
+            @PathVariable Long id,
+            @Valid @RequestBody AddMusicToPlaylistRequest request) {
+        Long userId = getCurrentUserId();
+        playlistService.addMusicToPlaylist(id, request, userId);
+        return ApiResponse.success(null, "음악이 추가되었습니다.");
+    }
+
+    // 공개 플레이리스트 목록
+    @GetMapping("/public")
+    public ApiResponse<Page<PlaylistDto>> getPublicPlaylists(
+            Pageable pageable) {
+        Page<PlaylistDto> playlists =
+            playlistService.getPublicPlaylists(pageable);
+        return ApiResponse.success(playlists);
+    }
+
+    // MUTI 타입별 추천
+    @GetMapping("/muti-type/{mutiType}")
+    public ApiResponse<List<PlaylistDto>> getPlaylistsByMutiType(
+            @PathVariable MutiType mutiType) {
+        List<PlaylistDto> playlists =
+            playlistService.getPlaylistsByMutiType(mutiType);
+        return ApiResponse.success(playlists);
+    }
+}
+```
+
+---
+
+### 3.7 Flyway 마이그레이션
+
+#### 📄 V7__create_music_tables.sql
+
+**역할**: Music domain 테이블 생성
+
+```sql
+-- musics 테이블
+CREATE TABLE musics (
+    music_id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    artist VARCHAR(200) NOT NULL,
+    album VARCHAR(200),
+    genre VARCHAR(30),
+    spotify_id VARCHAR(50) UNIQUE,
+    youtube_id VARCHAR(50),
+    duration_ms INTEGER,
+    release_date DATE,
+    image_url VARCHAR(500),
+    preview_url VARCHAR(500),
+    description TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- playlists 테이블
+CREATE TABLE playlists (
+    playlist_id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+    muti_type VARCHAR(4),
+    image_url VARCHAR(500),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- playlist_musics 중간 테이블
+CREATE TABLE playlist_musics (
+    playlist_music_id BIGSERIAL PRIMARY KEY,
+    playlist_id BIGINT NOT NULL REFERENCES playlists(playlist_id) ON DELETE CASCADE,
+    music_id BIGINT NOT NULL REFERENCES musics(music_id) ON DELETE CASCADE,
+    order_index INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_playlist_music UNIQUE (playlist_id, music_id)
+);
+
+-- 인덱스 생성
+CREATE INDEX idx_music_artist ON musics(artist);
+CREATE INDEX idx_music_genre ON musics(genre);
+CREATE INDEX idx_music_spotify ON musics(spotify_id);
+CREATE INDEX idx_playlist_user ON playlists(user_id);
+CREATE INDEX idx_playlist_muti_type ON playlists(muti_type);
+CREATE INDEX idx_playlist_music_playlist
+    ON playlist_musics(playlist_id, order_index);
+CREATE INDEX idx_playlist_music_music ON playlist_musics(music_id);
+```
+
+---
+
+### 3.8 테스트 작성
+
+#### 🧪 테스트 전략
+
+**총 57개 테스트 작성:**
+- Repository 테스트: 34개
+- Service 테스트: 23개
+
+#### 📝 MusicRepositoryTest (12 tests)
+
+```java
+@DataJpaTest
+@Import(TestJpaConfig.class)
+class MusicRepositoryTest {
+
+    @Test
+    @DisplayName("Spotify ID로 음악 찾기")
+    void findBySpotifyId() {
+        // given
+        Music music = Music.builder()
+            .title("Test Song")
+            .artist("Test Artist")
+            .spotifyId("spotify123")
+            .build();
+        em.persist(music);
+
+        // when
+        Optional<Music> result = musicRepository
+            .findBySpotifyId("spotify123");
+
+        // then
+        assertThat(result).isPresent();
+        assertThat(result.get().getTitle()).isEqualTo("Test Song");
+    }
+
+    @Test
+    @DisplayName("제목 또는 아티스트로 검색")
+    void searchByTitleOrArtist() {
+        // when
+        Page<Music> results = musicRepository
+            .searchByTitleOrArtist("test", PageRequest.of(0, 10));
+
+        // then
+        assertThat(results.getContent()).hasSize(1);
+    }
+}
+```
+
+#### 📝 PlaylistServiceTest (12 tests)
+
+```java
+@ExtendWith(MockitoExtension.class)
+class PlaylistServiceTest {
+
+    @Test
+    @DisplayName("플레이리스트에 음악 추가 - 성공")
+    void addMusicToPlaylist_Success() {
+        // given
+        Long playlistId = 1L;
+        Long userId = 1L;
+
+        given(playlistRepository.findById(playlistId))
+            .willReturn(Optional.of(playlist));
+        given(musicService.getMusicEntity(musicId))
+            .willReturn(music);
+        given(playlistMusicRepository
+                .existsByPlaylistIdAndMusicId(playlistId, musicId))
+            .willReturn(false);
+        given(playlistMusicRepository
+                .findMaxOrderIndexByPlaylistId(playlistId))
+            .willReturn(0);
+
+        // when
+        playlistService.addMusicToPlaylist(playlistId, request, userId);
+
+        // then
+        verify(playlistMusicRepository).save(any(PlaylistMusic.class));
+    }
+
+    @Test
+    @DisplayName("플레이리스트에 음악 추가 - 이미 존재함")
+    void addMusicToPlaylist_AlreadyExists() {
+        // given
+        given(playlistMusicRepository
+                .existsByPlaylistIdAndMusicId(any(), any()))
+            .willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() ->
+            playlistService.addMusicToPlaylist(playlistId, request, userId))
+            .isInstanceOf(BusinessException.class)
+            .hasFieldOrPropertyWithValue("errorCode",
+                ErrorCode.MUSIC_ALREADY_IN_PLAYLIST);
+    }
+}
+```
+
+---
+
+### 3.9 Phase 3 완료 체크리스트
+
+#### ✅ 구현 완료 항목
+
+**Entities (4개)**
+- [x] Genre enum - 20개 장르 정의
+- [x] Music - 음악 메타데이터, Spotify/YouTube ID
+- [x] Playlist - 사용자 플레이리스트, 공개/비공개, MUTI 타입
+- [x] PlaylistMusic - 중간 테이블, 순서 관리
+
+**Repositories (3개)**
+- [x] MusicRepository - 검색, 장르별, Spotify ID 조회
+- [x] PlaylistRepository - 공개, MUTI 타입, 사용자별 조회
+- [x] PlaylistMusicRepository - 순서 관리, 중복 체크
+
+**Services (2개)**
+- [x] MusicService - CRUD, 검색, 장르별 조회
+- [x] PlaylistService - CRUD, 음악 추가/삭제, 권한 검증
+
+**Controllers (2개)**
+- [x] MusicController - 음악 관리 API (관리자), 검색 (공개)
+- [x] PlaylistController - 플레이리스트 관리, 음악 추가/삭제
+
+**DTOs (10개)**
+- [x] CreateMusicRequest, UpdateMusicRequest
+- [x] CreatePlaylistRequest, UpdatePlaylistRequest
+- [x] AddMusicToPlaylistRequest
+- [x] MusicDto, PlaylistDto, PlaylistDetailDto
+- [x] ErrorCode 추가 (8개)
+
+**Database**
+- [x] V7 migration - musics, playlists, playlist_musics 테이블
+- [x] 인덱스 - artist, genre, spotify_id, user_id, muti_type
+- [x] 제약조건 - UNIQUE(playlist_id, music_id)
+
+**Tests (57개)**
+- [x] MusicRepositoryTest - 12 tests
+- [x] PlaylistRepositoryTest - 11 tests
+- [x] PlaylistMusicRepositoryTest - 11 tests
+- [x] MusicServiceTest - 11 tests
+- [x] PlaylistServiceTest - 12 tests
+
+---
+
+### 3.10 핵심 학습 내용
+
+#### 💡 중간 테이블 (PlaylistMusic)의 중요성
+
+**문제: 단순 다대다 관계**
+```java
+@ManyToMany
+private List<Music> musics;  // X - 순서 정보 없음
+```
+
+**해결: 중간 엔티티 사용**
+```java
+@OneToMany(mappedBy = "playlist")
+private List<PlaylistMusic> playlistMusics;  // O - 순서, 추가 정보 관리
+```
+
+**장점:**
+1. **순서 관리**: orderIndex로 플레이리스트 내 곡 순서 제어
+2. **추가 정보**: 추가 날짜, 추가한 사용자 등 저장 가능
+3. **유연성**: 같은 곡을 여러 플레이리스트에 다른 순서로 추가
+
+#### 💡 Enum 활용 (Genre)
+
+**장점:**
+- 타입 안정성 (오타 방지)
+- IDE 자동완성
+- 유효한 값만 허용
+
+```java
+public enum Genre {
+    POP("팝"), ROCK("록"), JAZZ("재즈");
+
+    @JsonValue  // JSON 응답 시 name() 대신 korean 사용
+    public String getKorean() {
+        return this.korean;
+    }
+}
+```
+
+#### 💡 BaseTimeEntity 미사용 패턴
+
+이 프로젝트에서는 각 엔티티에 직접 타임스탬프 필드를 선언:
+
+```java
+@EntityListeners(AuditingEntityListener.class)
+public class Music {
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+}
+```
+
+**이유:**
+- 명시적인 필드 관리
+- 엔티티별 커스터마이징 가능
+
+#### 💡 SecurityContextHolder 직접 사용
+
+UserPrincipal 대신 SecurityContextHolder를 직접 사용:
+
+```java
+private Long getCurrentUserId() {
+    Object principal = SecurityContextHolder.getContext()
+        .getAuthentication().getPrincipal();
+
+    if (principal instanceof Long) {
+        return (Long) principal;
+    } else if (principal instanceof String) {
+        return Long.parseLong((String) principal);
+    }
+    return null;
+}
+```
+
+---
+
+### 3.11 다음 단계
+
+**Phase 4: 프론트엔드 개발 (예정)**
+- React + TypeScript 설정
+- Music/Playlist UI 구현
+- 음악 플레이어 구현
+- Spotify API 연동
 
 ---
 
