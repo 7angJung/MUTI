@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = {
         "spring.flyway.enabled=true",
         "spring.flyway.clean-disabled=false",
-        "spring.jpa.hibernate.ddl-auto=validate",
+        "spring.jpa.hibernate.ddl-auto=none",  // H2의 ENUM 타입 호환성 문제로 인해 validate 대신 none 사용
         "spring.datasource.url=jdbc:h2:mem:flyway_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
 })
 @DisplayName("Flyway 마이그레이션 통합 테스트")

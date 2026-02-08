@@ -13,6 +13,8 @@ import com.muti.global.error.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -33,8 +35,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * SurveyController 통합 테스트
  */
-@WebMvcTest(SurveyController.class)
-@Import(SecurityConfig.class)
+@WebMvcTest(controllers = SurveyController.class,
+             excludeAutoConfiguration = {
+                     SecurityAutoConfiguration.class,
+                     SecurityFilterAutoConfiguration.class
+             })
 @DisplayName("SurveyController 테스트")
 class SurveyControllerTest {
 
@@ -49,6 +54,10 @@ class SurveyControllerTest {
 
     @MockBean
     private SurveyResponseService surveyResponseService;
+
+    // Security 관련 Bean (컨텍스트 로딩을 위해 필요)
+    @MockBean
+    private com.muti.global.jwt.JwtTokenProvider jwtTokenProvider;
 
     @Test
     @DisplayName("GET /api/v1/surveys/ping - 성공")

@@ -1,5 +1,6 @@
 package com.muti.infrastructure.database;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +23,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 실행 방법:
  * 1. .env.example을 복사하여 .env 파일 생성
  * 2. .env 파일에 실제 Supabase 비밀번호 입력
- * 3. 테스트 실행: ./gradlew test --tests SupabaseDatabaseConnectionTest
+ * 3. @Disabled 주석 제거
+ * 4. 테스트 실행: ./gradlew test --tests SupabaseDatabaseConnectionTest
+ *
+ * 참고: 로컬 개발 환경에서는 외부 DB 연결이 필요하므로 기본적으로 비활성화되어 있습니다.
  */
 @SpringBootTest
 @ActiveProfiles("prod")
 @DisplayName("Supabase 데이터베이스 연결 테스트")
+@Disabled("외부 Supabase DB 연결이 필요하므로 로컬 환경에서는 비활성화")
 class SupabaseDatabaseConnectionTest {
 
     @Autowired
