@@ -228,7 +228,18 @@ public class AuthController {
         if (principal instanceof Long) {
             userId = (Long) principal;
         } else if (principal instanceof String) {
-            userId = Long.parseLong((String) principal);
+            String principalStr = (String) principal;
+            // "anonymousUser"는 인증되지 않은 사용자를 의미
+            if ("anonymousUser".equals(principalStr)) {
+                log.warn("GET /api/v1/auth/me - 인증되지 않은 요청");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            try {
+                userId = Long.parseLong(principalStr);
+            } catch (NumberFormatException e) {
+                log.error("GET /api/v1/auth/me - Principal을 Long으로 변환 실패: {}", principalStr);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
         } else {
             throw new IllegalStateException("Unexpected principal type: " + principal.getClass());
         }
