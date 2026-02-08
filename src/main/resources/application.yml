@@ -38,6 +38,12 @@ spring:
     locations: classpath:db/migration
     validate-on-migrate: true
 
+# JWT 설정
+jwt:
+  secret: ${JWT_SECRET:muti-secret-key-for-development-only-change-in-production-at-least-256-bits-long}
+  access-token-expiration: 900000          # 15분 (15 * 60 * 1000 ms)
+  refresh-token-expiration: 604800000      # 7일 (7 * 24 * 60 * 60 * 1000 ms)
+
 server:
   port: 8080
   shutdown: graceful
