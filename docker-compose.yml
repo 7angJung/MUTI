@@ -1,0 +1,43 @@
+services:
+  # MUTI Backend Application
+  muti-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: muti-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring Profile
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+
+      # Database Configuration (Supabase)
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+      # JWT Configuration
+      - JWT_SECRET=${JWT_SECRET}
+
+      # Logging
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_COM_MUTI=INFO
+
+    env_file:
+      - .env
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+    networks:
+      - muti-network
+
+networks:
+  muti-network:
+    driver: bridge
