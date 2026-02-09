@@ -1,0 +1,69 @@
+name: Build and Push Docker Image
+
+# 워크플로우 트리거 조건
+on:
+  push:
+    branches: [ main, dev ]
+    tags:
+      - 'v*.*.*'  # v1.0.0 형식의 태그
+  workflow_dispatch:  # 수동 실행 가능
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write  # GitHub Container Registry에 푸시하기 위한 권한
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Docker Buildx 설정 (멀티 플랫폼 빌드 지원)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. GitHub Container Registry 로그인
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 4. Docker 이미지 메타데이터 추출 (태그, 레이블)
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # 5. Docker 이미지 빌드 및 푸시
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha  # GitHub Actions 캐시 사용
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64  # 멀티 플랫폼 지원
+
+      # 6. 이미지 정보 출력
+      - name: Image digest
+        run: echo ${{ steps.meta.outputs.tags }}

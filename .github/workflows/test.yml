@@ -1,0 +1,66 @@
+name: Run Tests
+
+# 워크플로우 트리거 조건
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+# 동시에 실행되는 워크플로우 취소 (최신 것만 실행)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test with JDK 17
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. JDK 17 설정
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'  # Gradle 의존성 캐싱
+
+      # 3. Gradle 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4. Gradle 의존성 다운로드 (캐싱 최적화)
+      - name: Download dependencies
+        run: ./gradlew dependencies --no-daemon
+
+      # 5. 테스트 실행
+      - name: Run tests
+        run: ./gradlew test --no-daemon --stacktrace
+        env:
+          # H2 인메모리 DB 사용 (테스트 환경)
+          SPRING_PROFILES_ACTIVE: test
+
+      # 6. 테스트 결과 리포트 생성 (실패 시에도 실행)
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v4
+        if: always()  # 성공/실패 관계없이 항상 실행
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'
+          check_name: Test Report
+          fail_on_failure: true
+
+      # 7. 테스트 커버리지 리포트 업로드 (선택사항)
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            **/build/test-results/test/
+            **/build/reports/tests/test/
+          retention-days: 30

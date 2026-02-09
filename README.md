@@ -1,5 +1,9 @@
 # MUTI (MUsic Type Indicator)
 
+[![CI/CD Pipeline](https://github.com/7angJung/MUTI/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/7angJung/MUTI/actions/workflows/ci-cd.yml)
+[![Run Tests](https://github.com/7angJung/MUTI/actions/workflows/test.yml/badge.svg)](https://github.com/7angJung/MUTI/actions/workflows/test.yml)
+[![Build Docker](https://github.com/7angJung/MUTI/actions/workflows/docker.yml/badge.svg)](https://github.com/7angJung/MUTI/actions/workflows/docker.yml)
+
 > 음악 성향 기반 추천 서비스 - 당신의 음악 취향을 16가지 타입으로 분석합니다
 
 ## 📋 목차
