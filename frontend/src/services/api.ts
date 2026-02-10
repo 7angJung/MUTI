@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://muti-world.duckdns.org';
+// 개발 환경에서는 Vite 프록시 사용, 프로덕션에서는 전체 URL 사용
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? '' : 'https://muti-world.duckdns.org');
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,9 +25,15 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor: 에러 처리
+// Response interceptor: 에러 처리 및 응답 데이터 unwrap
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 백엔드가 {success: true, data: {...}} 형식으로 응답하는 경우 data 추출
+    if (response.data && response.data.success !== undefined && response.data.data !== undefined) {
+      return { ...response, data: response.data.data };
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // 인증 실패 시 로그아웃

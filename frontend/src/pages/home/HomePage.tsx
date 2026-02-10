@@ -39,19 +39,27 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <div className="flex gap-4 justify-center">
+            <div className="space-y-4">
               <Link
-                to="/signup"
-                className="px-8 py-4 rounded-full bg-spotify-green text-white font-bold hover:bg-spotify-green-light hover:scale-105 transition-all duration-200"
+                to="/survey"
+                className="inline-block px-12 py-5 rounded-full bg-spotify-green text-white font-bold text-lg hover:bg-spotify-green-light hover:scale-105 transition-all duration-200 shadow-lg"
               >
-                무료로 시작하기
+                🎵 음악 성향 테스트 시작하기
               </Link>
-              <Link
-                to="/login"
-                className="px-8 py-4 rounded-full bg-transparent border-2 border-white text-white font-bold hover:bg-white hover:text-spotify-black transition-all duration-200"
-              >
-                로그인
-              </Link>
+              <div className="flex gap-4 justify-center">
+                <Link
+                  to="/signup"
+                  className="px-6 py-3 rounded-full bg-transparent border-2 border-spotify-green text-spotify-green font-bold hover:bg-spotify-green hover:text-white transition-all duration-200"
+                >
+                  회원가입
+                </Link>
+                <Link
+                  to="/login"
+                  className="px-6 py-3 rounded-full bg-transparent border-2 border-white text-white font-bold hover:bg-white hover:text-spotify-black transition-all duration-200"
+                >
+                  로그인
+                </Link>
+              </div>
             </div>
           )}
         </div>

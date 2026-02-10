@@ -3,6 +3,8 @@ import Layout from './components/layout/Layout';
 import HomePage from './pages/home/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
+import SurveyPage from './pages/survey/SurveyPage';
+import ResultPage from './pages/survey/ResultPage';
 import { useAuthStore } from './store/authStore';
 
 // Protected Route Component
@@ -26,6 +28,10 @@ function App() {
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+
+        {/* Survey Routes */}
+        <Route path="/survey" element={<SurveyPage />} />
+        <Route path="/survey/result" element={<ResultPage />} />
 
         {/* Protected Routes - 추후 추가 예정 */}
         {/*
