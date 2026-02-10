@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("prod")
 @DisplayName("Supabase 데이터베이스 연결 테스트")
+@Disabled("외부 Supabase DB 연결이 필요하므로 CI/CD 환경에서는 비활성화")
 class SupabaseDatabaseConnectionTest {
 
     @Autowired
