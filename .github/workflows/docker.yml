@@ -8,6 +8,11 @@ on:
       - 'v*.*.*'  # v1.0.0 형식의 태그
   workflow_dispatch:  # 수동 실행 가능
 
+# 동일 브랜치의 이전 빌드 자동 취소
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
