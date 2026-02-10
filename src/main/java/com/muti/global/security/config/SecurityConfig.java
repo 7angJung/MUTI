@@ -177,6 +177,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",           // React 개발 서버
                 "http://localhost:5173",           // Vite 개발 서버
+                "http://localhost:5174",           // Vite 개발 서버 (대체 포트)
                 "http://127.0.0.1:3000",
                 "https://*.vercel.app",            // Vercel 배포
                 "https://*.up.railway.app"         // Railway 배포
