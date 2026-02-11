@@ -2,8 +2,8 @@
 
 > **프로젝트**: 음악 기반 소셜 플랫폼
 > **기술 스택**: Spring Boot + React + PostgreSQL
-> **배포**: AWS EC2 + Vercel
-> **문서 최종 업데이트**: 2026-02-10
+> **배포**: AWS EC2 + Nginx
+> **문서 최종 업데이트**: 2026-02-11
 
 ---
 
@@ -68,13 +68,32 @@
 
 #### Frontend 개발 Phase
 
-- **[Phase 7-C: 프론트엔드 기본 구조](./phase7c.md)** ✅ 최신
+- **[Phase 7-C: 프론트엔드 기본 구조](./phase7c.md)**
   - React + Vite + TypeScript
   - Tailwind CSS (Spotify 테마)
   - Zustand 상태 관리
   - React Router
   - Axios 인터셉터 (JWT)
   - Layout 및 페이지 컴포넌트
+
+- **[Phase 7-C Survey: 설문 시스템 구현](./phase7c_survey.md)**
+  - 설문 CRUD API
+  - 8개 질문 + 16가지 MUTI 타입
+  - 점수 계산 알고리즘
+  - 결과 분석 시스템
+
+- **[Phase 7-D: Likert Scale 전환](./phase7d_likert_scale.md)**
+  - 이분법 → 5점 리커트 척도
+  - 8개 질문, 40개 옵션
+  - 대칭적 점수 시스템 (+5, +3, +1, -3, -5)
+  - 반응형 UI (가로/세로 레이아웃)
+
+- **[Phase 7-E: Nginx + Frontend 배포](./phase7e_nginx_frontend_deployment.md)** ✅ 최신
+  - Nginx 리버스 프록시 설정
+  - EC2에 프론트엔드 배포
+  - SPA 라우팅 (try_files)
+  - 정적 파일 캐싱 최적화
+  - 단일 도메인 통합 (프론트+백엔드)
 
 ---
 
@@ -89,20 +108,26 @@
 - HTTPS 설정 (Phase 7-A)
 - 모니터링 설정 (Phase 7-B)
 - Frontend 기본 구조 (Phase 7-C)
+- 설문 시스템 구현 (Phase 7-C Survey)
+- Likert Scale 전환 (Phase 7-D)
+- Nginx + Frontend 배포 (Phase 7-E)
 
-### 🚧 진행 중
+### 🎉 현재 상태
 
-- Frontend 백엔드 API 연동
-- UI/UX 개선
-- 추가 페이지 개발
+**배포 완료:** http://muti-world.duckdns.org
+- ✅ 프론트엔드: React SPA (Nginx 서빙)
+- ✅ 백엔드: Spring Boot API
+- ✅ 데이터베이스: PostgreSQL (Docker)
+- ✅ 설문 시스템: 8개 질문, 5점 리커트 척도
+- ✅ 16가지 MUTI 음악 성향 타입 분석
 
 ### 📅 다음 계획
 
-1. Frontend API 연동 테스트
-2. Frontend 배포 (Vercel)
+1. HTTPS 적용 (Let's Encrypt)
+2. Gzip 압축 최적화
 3. Spotify API 통합
-4. 음악 검색 기능
-5. 플레이리스트 공유 기능
+4. 음악 검색 및 추천 기능
+5. 플레이리스트 생성/공유 기능
 
 ---
 
@@ -111,9 +136,9 @@
 ### Backend
 ```
 Language: Java 21
-Framework: Spring Boot 3.5.10
-Database: PostgreSQL (Supabase)
-Migration: Flyway 10.22.1
+Framework: Spring Boot 3.4.1
+Database: PostgreSQL 17
+Migration: Flyway
 Authentication: JWT (jjwt 0.12.6)
 Deployment: AWS EC2 + Docker
 CI/CD: GitHub Actions
@@ -133,10 +158,11 @@ Styling: Tailwind CSS 4.1.18
 ### Infrastructure
 ```
 Cloud: AWS EC2 (t2.micro)
+Web Server: Nginx 1.24.0
 Container: Docker + Docker Compose
 Registry: GitHub Container Registry
 Domain: muti-world.duckdns.org
-SSL: Let's Encrypt
+SSL: HTTP (HTTPS 준비 중)
 Monitoring: Uptime Robot
 ```
 
@@ -192,9 +218,9 @@ Monitoring: Uptime Robot
 
 ### 프로젝트
 
-- **Backend API**: https://muti-world.duckdns.org
-- **Frontend**: (배포 예정)
-- **GitHub**: (Repository URL)
+- **서비스 URL**: http://muti-world.duckdns.org
+- **Backend API**: http://muti-world.duckdns.org/api
+- **GitHub**: https://github.com/7angJung/MUTI
 
 ### 외부 서비스
 
@@ -247,6 +273,6 @@ Monitoring: Uptime Robot
 
 ---
 
-**마지막 업데이트**: 2026-02-10
+**마지막 업데이트**: 2026-02-11
 
-**다음 업데이트 예정**: Phase 7-C 완료 후
+**다음 업데이트 예정**: Phase 7-F (HTTPS) 또는 Phase 8 (Spotify API) 완료 후
