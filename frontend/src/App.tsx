@@ -5,13 +5,13 @@ import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import SurveyPage from './pages/survey/SurveyPage';
 import ResultPage from './pages/survey/ResultPage';
-import { useAuthStore } from './store/authStore';
+// import { useAuthStore } from './store/authStore';
 
-// Protected Route Component
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
-}
+// Protected Route Component (추후 사용 예정)
+// function ProtectedRoute({ children }: { children: React.ReactNode }) {
+//   const { isAuthenticated } = useAuthStore();
+//   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+// }
 
 function App() {
   return (

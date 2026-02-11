@@ -72,7 +72,7 @@ export default function SignupPage() {
       // TODO: 백엔드에서 사용자 정보를 함께 반환하도록 수정 필요
       // 임시로 토큰만 저장
       setAuth(
-        { id: 0, email: formData.email, username: formData.username, createdAt: '' },
+          { id: 0, email: formData.email, nickname: formData.username, createdAt: '' },
         response.accessToken,
         response.refreshToken
       );

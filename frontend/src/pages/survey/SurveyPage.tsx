@@ -173,7 +173,7 @@ export default function SurveyPage() {
 
               {/* 라디오 버튼들 */}
               <div className="relative flex justify-between items-start">
-                {currentQuestion.options.map((option, index) => (
+                {currentQuestion.options.map((option) => (
                   <button
                     key={option.id}
                     onClick={() => setSelectedOption(option.id)}
