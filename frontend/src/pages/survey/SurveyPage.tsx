@@ -164,42 +164,77 @@ export default function SurveyPage() {
             {currentQuestion.content}
           </h2>
 
-          {/* 선택지 */}
-          <div className="space-y-4">
-            {currentQuestion.options.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => setSelectedOption(option.id)}
-                className={`w-full text-left p-6 rounded-xl border-2 transition-all duration-200 ${
-                  selectedOption === option.id
-                    ? 'border-spotify-green bg-spotify-green bg-opacity-10 scale-[1.02]'
-                    : 'border-spotify-gray-light border-opacity-20 hover:border-spotify-green hover:border-opacity-50 hover:bg-spotify-gray-dark hover:bg-opacity-50'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div
-                    className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center ${
-                      selectedOption === option.id
-                        ? 'border-spotify-green bg-spotify-green'
-                        : 'border-spotify-gray-light'
-                    }`}
+          {/* 선택지 - Likert Scale (16personalities 스타일) */}
+          <div className="py-8">
+            {/* 가로 라디오 버튼 척도 */}
+            <div className="relative px-4">
+              {/* 연결선 */}
+              <div className="absolute top-8 left-0 right-0 h-0.5 bg-spotify-gray-light bg-opacity-20" />
+
+              {/* 라디오 버튼들 */}
+              <div className="relative flex justify-between items-start">
+                {currentQuestion.options.map((option, index) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setSelectedOption(option.id)}
+                    className="flex flex-col items-center z-10 group flex-1 max-w-[120px]"
                   >
-                    {selectedOption === option.id && (
-                      <div className="w-3 h-3 bg-white rounded-full" />
-                    )}
-                  </div>
-                  <span
-                    className={`text-lg ${
-                      selectedOption === option.id
-                        ? 'text-white font-semibold'
-                        : 'text-spotify-gray-light'
-                    }`}
-                  >
-                    {option.content}
-                  </span>
-                </div>
-              </button>
-            ))}
+                    {/* 라디오 버튼 */}
+                    <div
+                      className={`
+                        w-16 h-16 rounded-full border-4 transition-all duration-200
+                        flex items-center justify-center cursor-pointer
+                        ${
+                          selectedOption === option.id
+                            ? 'border-green-500 bg-green-500 scale-110 shadow-lg shadow-green-500/50'
+                            : 'border-gray-400 bg-transparent hover:border-green-400 hover:scale-105'
+                        }
+                      `}
+                    >
+                      {/* 체크 표시 (선택 시) */}
+                      {selectedOption === option.id && (
+                        <svg
+                          className="w-8 h-8 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      )}
+                    </div>
+
+                    {/* 라벨 (항상 표시) */}
+                    <span
+                      className={`
+                        mt-4 text-xs text-center leading-tight transition-colors duration-200 px-1
+                        ${
+                          selectedOption === option.id
+                            ? 'text-green-500 font-semibold'
+                            : 'text-gray-400'
+                        }
+                      `}
+                    >
+                      {option.content}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 중앙 안내 텍스트 */}
+            <div className="text-center mt-8">
+              <p className="text-spotify-gray-light text-sm">
+                {selectedOption
+                  ? '선택 완료 - 다음으로 진행하세요'
+                  : '위 척도에서 하나를 선택해주세요'}
+              </p>
+            </div>
           </div>
         </div>
 

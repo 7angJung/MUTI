@@ -1,4 +1,24 @@
 services:
+  # PostgreSQL Database (Local Development)
+  postgres:
+    image: postgres:17
+    container_name: muti-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=muti_local
+      - POSTGRES_USER=muti
+      - POSTGRES_PASSWORD=muti_local_password
+    volumes:
+      - muti_postgres_data:/var/lib/postgresql/data
+    networks:
+      - muti-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U muti -d muti_local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # MUTI Backend Application
   muti-backend:
     build:
@@ -8,23 +28,26 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Spring Profile
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      # Spring Profile (local for development, prod for production)
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
 
-      # Database Configuration (Supabase)
-      - DB_URL=${DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
+      # Database Configuration (Local PostgreSQL)
+      - DB_URL=${DB_URL:-jdbc:postgresql://postgres:5432/muti_local}
+      - DB_USERNAME=${DB_USERNAME:-muti}
+      - DB_PASSWORD=${DB_PASSWORD:-muti_local_password}
 
       # JWT Configuration
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-local-development-secret-key-change-in-production}
 
       # Logging
       - LOGGING_LEVEL_ROOT=INFO
-      - LOGGING_LEVEL_COM_MUTI=INFO
+      - LOGGING_LEVEL_COM_MUTI=DEBUG
 
     env_file:
       - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
 
     restart: unless-stopped
 
@@ -41,3 +64,6 @@ services:
 networks:
   muti-network:
     driver: bridge
+
+volumes:
+  muti_postgres_data:
