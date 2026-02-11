@@ -29,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.flyway.enabled=true",
         "spring.flyway.clean-disabled=false",
         "spring.jpa.hibernate.ddl-auto=none",  // H2의 ENUM 타입 호환성 문제로 인해 validate 대신 none 사용
-        "spring.datasource.url=jdbc:h2:mem:flyway_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+        "spring.datasource.url=jdbc:h2:mem:flyway_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+        "spring.datasource.driver-class-name=org.h2.Driver"
 })
 @DisplayName("Flyway 마이그레이션 통합 테스트")
 class FlywayMigrationIntegrationTest {
@@ -91,20 +92,20 @@ class FlywayMigrationIntegrationTest {
     }
 
     @Test
-    @DisplayName("V2: 초기 데이터 삽입 - QuestionOption 16개 생성")
+    @DisplayName("V8: 초기 데이터 삽입 - QuestionOption 40개 생성 (Likert 5-point scale)")
     void migration_V2_Options_Created() {
         // when
         List<QuestionOption> options = questionOptionRepository.findAll();
 
         // then
-        assertThat(options).hasSize(16);
+        assertThat(options).hasSize(40);  // 8 questions × 5 options
 
         // 모든 옵션의 점수가 1~5 범위인지 확인
         assertThat(options).allMatch(o -> o.getScore() >= 1 && o.getScore() <= 5);
     }
 
     @Test
-    @DisplayName("V2: E_I 축 질문 및 선택지 검증")
+    @DisplayName("V8: E_I 축 질문 및 선택지 검증 (Likert scale)")
     void migration_V2_EI_Axis_Valid() {
         // when
         List<Question> eiQuestions = questionRepository.findAll().stream()
@@ -121,12 +122,12 @@ class FlywayMigrationIntegrationTest {
 
         assertThat(q1.getContent()).contains("템포");
 
-        // 옵션 확인
+        // 옵션 확인 - Likert scale: 5 options per question
         List<QuestionOption> options = questionOptionRepository.findAll().stream()
                 .filter(o -> o.getQuestion().getId().equals(q1.getId()))
                 .toList();
 
-        assertThat(options).hasSize(2);
+        assertThat(options).hasSize(5);  // 매우 그렇다, 그렇다, 보통이다, 그렇지 않다, 매우 그렇지 않다
         assertThat(options).anyMatch(o -> o.getDirection() == AxisDirection.E);
         assertThat(options).anyMatch(o -> o.getDirection() == AxisDirection.I);
     }
@@ -198,7 +199,7 @@ class FlywayMigrationIntegrationTest {
     }
 
     @Test
-    @DisplayName("전체 데이터 무결성 검증")
+    @DisplayName("전체 데이터 무결성 검증 (Likert scale)")
     void migration_DataIntegrity() {
         // when
         Survey survey = surveyRepository.findAll().get(0);
@@ -221,12 +222,12 @@ class FlywayMigrationIntegrationTest {
             assertThat(questions).anyMatch(q -> q.getOrderIndex() == order);
         }
 
-        // 4. 각 질문당 정확히 2개의 옵션
+        // 4. 각 질문당 정확히 5개의 옵션 (Likert 5-point scale)
         for (Question question : questions) {
             long optionCount = options.stream()
                     .filter(o -> o.getQuestion().getId().equals(question.getId()))
                     .count();
-            assertThat(optionCount).isEqualTo(2);
+            assertThat(optionCount).isEqualTo(5);
         }
     }
 

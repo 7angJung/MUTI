@@ -78,7 +78,7 @@ class SurveyDataInitializerTest {
     }
 
     @Test
-    @DisplayName("초기 설문 데이터 생성 - QuestionOption 16개 (질문당 2개)")
+    @DisplayName("초기 설문 데이터 생성 - QuestionOption 40개 (질문당 5개, Likert scale)")
     void initializeData_QuestionOptions_Created() throws Exception {
         // given & when
         surveyDataInitializer.run(mock(ApplicationArguments.class));
@@ -91,16 +91,16 @@ class SurveyDataInitializerTest {
                 .mapToInt(q -> q.getOptions().size())
                 .sum();
 
-        assertThat(totalOptions).isEqualTo(16);
+        assertThat(totalOptions).isEqualTo(40);  // 8 questions × 5 options
 
-        // 각 질문당 2개씩 있는지 확인
+        // 각 질문당 5개씩 있는지 확인 (Likert 5-point scale)
         for (Question question : questions) {
-            assertThat(question.getOptions()).hasSize(2);
+            assertThat(question.getOptions()).hasSize(5);
         }
     }
 
     @Test
-    @DisplayName("초기 설문 데이터 생성 - E_I 축 질문 검증")
+    @DisplayName("초기 설문 데이터 생성 - E_I 축 질문 검증 (Likert scale)")
     void initializeData_EI_Questions_Valid() throws Exception {
         // given & when
         surveyDataInitializer.run(mock(ApplicationArguments.class));
@@ -119,13 +119,13 @@ class SurveyDataInitializerTest {
                 .orElseThrow();
 
         assertThat(q1.getContent()).contains("템포");
-        assertThat(q1.getOptions()).hasSize(2);
+        assertThat(q1.getOptions()).hasSize(5);  // Likert 5-point scale
         assertThat(q1.getOptions()).anyMatch(o -> o.getDirection() == AxisDirection.E);
         assertThat(q1.getOptions()).anyMatch(o -> o.getDirection() == AxisDirection.I);
     }
 
     @Test
-    @DisplayName("초기 설문 데이터 생성 - S_F 축 질문 검증")
+    @DisplayName("초기 설문 데이터 생성 - S_F 축 질문 검증 (Likert scale)")
     void initializeData_SF_Questions_Valid() throws Exception {
         // given & when
         surveyDataInitializer.run(mock(ApplicationArguments.class));
@@ -137,9 +137,9 @@ class SurveyDataInitializerTest {
 
         assertThat(sfQuestions).hasSize(2);
 
-        // 질문 내용 확인
-        assertThat(sfQuestions).anyMatch(q -> q.getContent().contains("요소"));
-        assertThat(sfQuestions).anyMatch(q -> q.getContent().contains("고를 때"));
+        // 질문 내용 확인 (Likert statement format)
+        assertThat(sfQuestions).anyMatch(q -> q.getContent().contains("비트"));
+        assertThat(sfQuestions).anyMatch(q -> q.getContent().contains("그루브"));
 
         // 모든 옵션이 S 또는 F 방향인지 확인
         for (Question question : sfQuestions) {
@@ -175,7 +175,7 @@ class SurveyDataInitializerTest {
     }
 
     @Test
-    @DisplayName("초기 설문 데이터 생성 - P_U 축 질문 검증")
+    @DisplayName("초기 설문 데이터 생성 - P_U 축 질문 검증 (Likert scale)")
     void initializeData_PU_Questions_Valid() throws Exception {
         // given & when
         surveyDataInitializer.run(mock(ApplicationArguments.class));
@@ -187,9 +187,9 @@ class SurveyDataInitializerTest {
 
         assertThat(puQuestions).hasSize(2);
 
-        // 질문 내용 확인
-        assertThat(puQuestions).anyMatch(q -> q.getContent().contains("발견"));
-        assertThat(puQuestions).anyMatch(q -> q.getContent().contains("스타일"));
+        // 질문 내용 확인 (Likert statement format)
+        assertThat(puQuestions).anyMatch(q -> q.getContent().contains("차트"));
+        assertThat(puQuestions).anyMatch(q -> q.getContent().contains("대중적"));
 
         // 모든 옵션이 P 또는 U 방향인지 확인
         for (Question question : puQuestions) {

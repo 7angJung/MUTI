@@ -27,9 +27,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * MUTI Survey API E2E 통합 테스트
  * 실제 API 엔드포인트를 호출하여 전체 플로우 검증
  */
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:e2e_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.flyway.enabled=true",
+        "spring.jpa.hibernate.ddl-auto=none"
+})
 @AutoConfigureMockMvc
-@ActiveProfiles("local")
 @Transactional
 @DisplayName("Survey API E2E 테스트")
 class SurveyApiE2ETest {
@@ -70,7 +76,7 @@ class SurveyApiE2ETest {
         Long surveyId = objectMapper.readTree(listResponse)
                 .get("data").get(0).get("id").asLong();
 
-        // Step 3: 설문 상세 조회
+        // Step 3: 설문 상세 조회 (Likert 5-point scale)
         mockMvc.perform(get("/api/v1/surveys/" + surveyId))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -80,7 +86,7 @@ class SurveyApiE2ETest {
                 .andExpect(jsonPath("$.data.questions").isArray())
                 .andExpect(jsonPath("$.data.questions.length()").value(8))
                 .andExpect(jsonPath("$.data.questions[0].options").isArray())
-                .andExpect(jsonPath("$.data.questions[0].options.length()").value(2));
+                .andExpect(jsonPath("$.data.questions[0].options.length()").value(5));  // Likert 5-point scale
     }
 
     @Test
@@ -168,13 +174,14 @@ class SurveyApiE2ETest {
         var questionsNode = objectMapper.readTree(detailResult.getResponse().getContentAsString())
                 .get("data").get("questions");
 
-        // Step 3: 모든 질문에 대해 두 번째 옵션(I, F, D, U 방향) 선택
+        // Step 3: 모든 질문에 대해 마지막 옵션(I, F, D, U 방향, "매우 그렇지 않다") 선택
         List<SurveyAnswerDto> answers = new java.util.ArrayList<>();
         for (int i = 0; i < questionsNode.size(); i++) {
             var question = questionsNode.get(i);
             Long questionId = question.get("id").asLong();
-            Long secondOptionId = question.get("options").get(1).get("id").asLong();
-            answers.add(new SurveyAnswerDto(questionId, secondOptionId));
+            // Likert scale: 5번째 옵션 = "매우 그렇지 않다" (score -5, I/F/D/U direction)
+            Long lastOptionId = question.get("options").get(4).get("id").asLong();
+            answers.add(new SurveyAnswerDto(questionId, lastOptionId));
         }
 
         // Step 4: 설문 응답 제출
@@ -262,20 +269,22 @@ class SurveyApiE2ETest {
     }
 
     @Test
-    @DisplayName("E2E: 통합 시나리오 - 여러 사용자의 설문 응답")
+    @DisplayName("E2E: 통합 시나리오 - 여러 사용자의 설문 응답 (Likert scale)")
     void e2e_MultipleUsers() throws Exception {
-        // 사용자 1: ESAP 타입
+        // 사용자 1: ESAP 타입 (모든 질문에 첫 번째 옵션 "매우 그렇다" 선택, score +5)
+        // V2 used IDs 1-16, V8 inserts start from ID 17
+        // Likert scale option IDs: Q1(17-21), Q2(22-26), Q3(27-31), Q4(32-36), Q5(37-41), Q6(42-46), Q7(47-51), Q8(52-56)
         SubmitSurveyRequest user1Request = SubmitSurveyRequest.builder()
                 .surveyId(1L)
                 .answers(List.of(
-                        new SurveyAnswerDto(1L, 1L),
-                        new SurveyAnswerDto(2L, 3L),
-                        new SurveyAnswerDto(3L, 5L),
-                        new SurveyAnswerDto(4L, 7L),
-                        new SurveyAnswerDto(5L, 9L),
-                        new SurveyAnswerDto(6L, 11L),
-                        new SurveyAnswerDto(7L, 13L),
-                        new SurveyAnswerDto(8L, 15L)
+                        new SurveyAnswerDto(1L, 17L),  // Q1: 매우 그렇다 (E, +5)
+                        new SurveyAnswerDto(2L, 22L),  // Q2: 매우 그렇다 (E, +5)
+                        new SurveyAnswerDto(3L, 27L),  // Q3: 매우 그렇다 (S, +5)
+                        new SurveyAnswerDto(4L, 32L),  // Q4: 매우 그렇다 (S, +5)
+                        new SurveyAnswerDto(5L, 37L),  // Q5: 매우 그렇다 (A, +5)
+                        new SurveyAnswerDto(6L, 42L),  // Q6: 매우 그렇다 (A, +5)
+                        new SurveyAnswerDto(7L, 47L),  // Q7: 매우 그렇다 (P, +5)
+                        new SurveyAnswerDto(8L, 52L)   // Q8: 매우 그렇다 (P, +5)
                 ))
                 .sessionId("user-1-session")
                 .build();
@@ -286,18 +295,18 @@ class SurveyApiE2ETest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.mutiType").value("ESAP"));
 
-        // 사용자 2: IFDU 타입
+        // 사용자 2: IFDU 타입 (모든 질문에 마지막 옵션 "매우 그렇지 않다" 선택, score -5)
         SubmitSurveyRequest user2Request = SubmitSurveyRequest.builder()
                 .surveyId(1L)
                 .answers(List.of(
-                        new SurveyAnswerDto(1L, 2L),
-                        new SurveyAnswerDto(2L, 4L),
-                        new SurveyAnswerDto(3L, 6L),
-                        new SurveyAnswerDto(4L, 8L),
-                        new SurveyAnswerDto(5L, 10L),
-                        new SurveyAnswerDto(6L, 12L),
-                        new SurveyAnswerDto(7L, 14L),
-                        new SurveyAnswerDto(8L, 16L)
+                        new SurveyAnswerDto(1L, 21L),  // Q1: 매우 그렇지 않다 (I, -5)
+                        new SurveyAnswerDto(2L, 26L),  // Q2: 매우 그렇지 않다 (I, -5)
+                        new SurveyAnswerDto(3L, 31L),  // Q3: 매우 그렇지 않다 (F, -5)
+                        new SurveyAnswerDto(4L, 36L),  // Q4: 매우 그렇지 않다 (F, -5)
+                        new SurveyAnswerDto(5L, 41L),  // Q5: 매우 그렇지 않다 (D, -5)
+                        new SurveyAnswerDto(6L, 46L),  // Q6: 매우 그렇지 않다 (D, -5)
+                        new SurveyAnswerDto(7L, 51L),  // Q7: 매우 그렇지 않다 (U, -5)
+                        new SurveyAnswerDto(8L, 56L)   // Q8: 매우 그렇지 않다 (U, -5)
                 ))
                 .sessionId("user-2-session")
                 .build();
