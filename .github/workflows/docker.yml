@@ -71,4 +71,4 @@ jobs:
 
       # 6. 이미지 정보 출력
       - name: Image digest
-        run: echo ${{ steps.meta.outputs.tags }}
+        run: echo "${{ steps.meta.outputs.tags }}"
