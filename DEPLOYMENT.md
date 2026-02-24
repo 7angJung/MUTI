@@ -48,9 +48,9 @@ Railway 프로젝트 페이지에서:
 
 ```
 SPRING_PROFILES_ACTIVE=prod
-DB_URL=jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?user=postgres.qlnuleskbxqhpyadsoeo
-DB_USERNAME=postgres.qlnuleskbxqhpyadsoeo
-DB_PASSWORD=cjhpeter9800*
+DB_URL=jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?user=postgres.????
+DB_USERNAME=postgres.????
+DB_PASSWORD=????
 PORT=8080
 ```
 
